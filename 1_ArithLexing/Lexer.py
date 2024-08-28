@@ -18,41 +18,66 @@ class TokenType(enum.Enum):
 
 class Token:
     """
-    This class contains the definition of Tokens. A token has two fields: its
-    text and its kind. The "kind" of a token is a constant that identifies it
-    uniquely. See the TokenType to know the possible identifiers (if you want).
-    You don't need to change this class.
+    This class represents a token, which is a basic unit of meaning extracted
+    from the input string during lexical analysis.
+
+    Attributes:
+        text (str): The token's actual text, used for identifiers, strings, and
+        numbers.
+        kind (TokenType): The type of the token, which classifies it based on
+        its role in the expression.
     """
 
+    # A list of tokens that represent operators in arithmetic expressions:
+    operators = {TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV}
+
     def __init__(self, tokenText, tokenKind):
-        # The token's actual text. Used for identifiers, strings, and numbers.
+        """
+        Initializes a Token object with its text and type.
+
+        Parameters:
+            tokenText (str): The actual text of the token.
+            tokenKind (TokenType): The type of the token defined in TokenType.
+        """
         self.text = tokenText
-        # The TokenType that this token is classified as.
         self.kind = tokenKind
 
 
 class Lexer:
     """
-    This class implements a simple lexer. It keeps, as its internal state, the
-    string that must be scanned. At any given point, we can read the next token
-    in this string and return it. This operation modifies the internal state of
-    the object: if we read the next token twice, unless we are at the end of the
-    token stream, we will get always a different token.
+    This class implements a simple lexer. It processes an input string and
+    breaks it down into a sequence of tokens.
+
+    The lexer maintains an internal state that tracks the current position in
+    the input string. Each call to `getToken` returns the next token and
+    advances the lexer state.
+
+    Attributes:
+        input_string (str): The string to be tokenized.
+        position (int): The current position in the input string.
+        length (int): The length of the input string.
     """
 
     def __init__(self, input_string):
         """
-        The constructor initializes the lexer with the string that must be
-        scanned. This string will be transformed into a sequence of tokens as
-        needed: whenever we read the next token.
-        """ 
+        Initializes the lexer with the input string that will be scanned.
+
+        Parameters:
+            input_string (str): The string to be tokenized.
+        """
         self.input_string = input_string
         self.position = 0
         self.length = len(input_string)
 
     def next_valid_token(self):
         """
-        A valid token is any token that is not a white space or a new line.
+        Retrieves the next valid token that is not a white space or a new line.
+
+        This method skips any tokens that are classified as white space or new
+        line and returns the first non-whitespace token found.
+
+        Returns:
+            Token: The next valid token in the input stream.
         """
         token = self.getToken()
         if token.kind == TokenType.WSP or token.kind == TokenType.NLN:
@@ -61,72 +86,91 @@ class Lexer:
 
     def tokens(self):
         """
-        This method iterates over the list of tokens lazily.
+        Generator that yields valid tokens from the input string, ignoring
+        white spaces and new lines.
+
+        This method continues to yield tokens until the end of the file is
+        reached.
+
+        Yields:
+            Token: The next valid token in the input stream.
         """
-        token = self.next_valid_token()
+        token = self.getToken()
         while token.kind != TokenType.EOF:
-            yield token
-            token = self.next_valid_token()
+            if token.kind != TokenType.WSP and token.kind != TokenType.NLN:
+                yield token
+            token = self.getToken()
 
     def getToken(self):
         """
-        This method returns the next token in the sequence of tokens. Notice
-        that this method changes the state of our lexer. If invoked twice, it
-        will return different tokens, unless we are at the end of the token
-        stream. In this case, it return EOF.
+        Retrieves the next token from the input string.
+
+        The lexer reads characters from the input string, classifies them
+        according to their type (e.g., operator, number, white space), and
+        returns a Token object.
+
+        Returns:
+            Token: The next token identified in the input string.
         """
         if self.position >= self.length:
             return Token("", TokenType.EOF)
 
         current_char = self.input_string[self.position]
+        self.position += 1
 
-        # Skip whitespaces and new lines
-        while current_char in [" ", "\n"]:
-            if current_char == " ":
-                token = Token(current_char, TokenType.WSP)
-            elif current_char == "\n":
-                token = Token(current_char, TokenType.NLN)
-            self.position += 1
-            if self.position >= self.length:
-                return Token("", TokenType.EOF)
-            current_char = self.input_string[self.position]
-            return token
-
-        # Handle numbers
         if current_char.isdigit():
-            num_str = ""
+            # Handle numbers (NUM)
+            number_text = current_char
             while (
                 self.position < self.length
                 and self.input_string[self.position].isdigit()
             ):
-                num_str += self.input_string[self.position]
+                number_text += self.input_string[self.position]
                 self.position += 1
-            return Token(num_str, TokenType.NUM)
+            return Token(number_text, TokenType.NUM)
 
-        # Handle operators
-        if current_char == "+":
-            self.position += 1
-            return Token("+", TokenType.ADD)
+        elif current_char == "+":
+            return Token(current_char, TokenType.ADD)
+
         elif current_char == "-":
-            self.position += 1
-            return Token("-", TokenType.SUB)
-        elif current_char == "*":
-            self.position += 1
-            return Token("*", TokenType.MUL)
-        elif current_char == "/":
-            self.position += 1
-            return Token("/", TokenType.DIV)
+            return Token(current_char, TokenType.SUB)
 
-        # If none of the above, move to next character (could add error
-        # handling here)
-        self.position += 1
-        return self.getToken()
+        elif current_char == "*":
+            return Token(current_char, TokenType.MUL)
+
+        elif current_char == "/":
+            return Token(current_char, TokenType.DIV)
+
+        elif current_char == " ":
+            return Token(current_char, TokenType.WSP)
+
+        elif current_char == "\n":
+            return Token(current_char, TokenType.NLN)
+
+        else:
+            raise ValueError(f"Unexpected character: {current_char}")
 
 
 def compute_postfix(lexer):
     """
-    Computes the arithmetic value associated with a list of tokens assumed to
-    be in reverse polish notation.
+    Evaluates an arithmetic expression in Reverse Polish Notation (Postfix
+    Notation).
+
+    The function uses a stack to compute the value of the expression. As it
+    processes tokens from the lexer, it pushes numbers onto the stack and pops
+    them when an operator is encountered, performing the operation and pushing
+    the result back onto the stack.
+
+    Parameters:
+        lexer (Lexer): An instance of the Lexer class, initialized with a string
+                       containing the arithmetic expression in postfix notation.
+
+    Returns:
+        int: The computed value of the arithmetic expression.
+
+    Raises:
+        ValueError: If an unexpected token type is encountered or the stack is
+        improperly used.
 
     Examples:
         >>> lexer = Lexer("3 4 + 2 * 7 /")
@@ -139,37 +183,62 @@ def compute_postfix(lexer):
     """
     stack = []
 
-    operators = {TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV}
     for token in lexer.tokens():
         if token.kind == TokenType.NUM:
+            # Push numbers onto the stack
             stack.append(int(token.text))
-        elif token.kind in operators:
+
+        elif token.kind in Token.operators:
+            # Pop the top two numbers off the stack and apply the operator
             if len(stack) < 2:
-                raise ValueError("Insufficient values in expression.")
+                raise ValueError("Insufficient values in the expression.")
+
             b = stack.pop()
             a = stack.pop()
 
             if token.kind == TokenType.ADD:
-                stack.append(a + b)
+                result = a + b
             elif token.kind == TokenType.SUB:
-                stack.append(a - b)
+                result = a - b
             elif token.kind == TokenType.MUL:
-                stack.append(a * b)
+                result = a * b
             elif token.kind == TokenType.DIV:
                 if b == 0:
-                    raise ZeroDivisionError("Division by zero is undefined.")
-                stack.append(a // b)  # Integer division
+                    raise ZeroDivisionError("Division by zero.")
+                result = a // b
 
+            # Push the result back onto the stack
+            stack.append(result)
+
+        else:
+            raise ValueError(f"Unexpected token type: {token.kind}")
+
+    # The final result should be the only value left in the stack
     if len(stack) != 1:
         raise ValueError("The user input has too many values.")
 
-    return stack.pop()
+    return stack[0]
 
 
 def compute_prefix(lexer):
     """
-    Computes the arithmetic value associated with a list of tokens assumed to
-    be in polish notation.
+    Evaluates an arithmetic expression in Polish Notation (Prefix Notation).
+
+    This function uses recursion to evaluate the expression. When it encounters
+    an operator, it recursively computes the values of the operands before
+    applying the operator. The recursion effectively builds and evaluates the
+    parsing tree for the expression.
+
+    Parameters:
+        lexer (Lexer): An instance of the Lexer class, initialized with a string
+                       containing the arithmetic expression in prefix notation.
+
+    Returns:
+        int: The computed value of the arithmetic expression.
+
+    Raises:
+        ValueError: If an unexpected token type is encountered.
+        ZeroDivisionError: If a division by zero is attempted.
 
     Examples:
         >>> lexer = Lexer("+ 3 * 4 2")
@@ -183,11 +252,11 @@ def compute_prefix(lexer):
     token = lexer.next_valid_token()
 
     if token.kind == TokenType.NUM:
+        # Base case: return the value if it's a number
         return int(token.text)
 
-    operators = {TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV}
-    if token.kind in operators:
-        # Recursively compute the two operands
+    elif token.kind in Token.operators:
+        # Recursive case: evaluate the operands
         a = compute_prefix(lexer)
         b = compute_prefix(lexer)
 
@@ -199,7 +268,8 @@ def compute_prefix(lexer):
             return a * b
         elif token.kind == TokenType.DIV:
             if b == 0:
-                raise ZeroDivisionError("Division by zero is undefined.")
-            return a // b  # Integer division
+                raise ZeroDivisionError("Division by zero.")
+            return a // b
 
-    raise ValueError(f"Unexpected token in expression: {token.kind}.")
+    else:
+        raise ValueError(f"Unexpected token type: {token.kind}")
