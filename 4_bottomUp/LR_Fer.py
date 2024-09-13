@@ -27,7 +27,6 @@ def print_state(state, stack, token):
 
 def shift_0(stack, lexer):
     token = lexer.next_valid_token()
-    print_state("shift_0", stack, token.text)
     if token.kind == TokenType.LPR:
         stack.append(TokenType.LPR)
         return 0
@@ -37,34 +36,27 @@ def shift_0(stack, lexer):
         return 1
     elif token.kind == TokenType.EOF:
         stack.append('S')
-        return 2
+        return 1
     else:
         raise ValueError(f"Unknown token: {token.text}")
 
 def reduce_1(stack, _):
-    print_state("reduce_1", stack, None)
     if match_and_pop(stack, [TokenType.LPR, 'P', TokenType.RPR]):
         stack.append('P')
-        return 3
-    if match_and_pop(stack, ['P']):
-        stack.append('S')
         return 2
-    else:
-        raise ValueError("Reduce error")
-
-def reduce_2(stack, _):
-    print_state("reduce_2", stack, None)
-    if match_and_pop(stack, [TokenType.LPR, 'S']):
+    elif match_and_pop(stack, ['P']):
         stack.append('S')
-        return 2
+        return 1
+    elif match_and_pop(stack, [TokenType.LPR, 'S']):
+        stack.append('S')
+        return 1
     elif stack == ['S']:
         return -1
     else:
         raise ValueError("Reduce error")
 
-def shift_3(stack, lexer):
+def shift_2(stack, lexer):
     token = lexer.next_valid_token()
-    print_state("shift_3", stack, token.text)
     if token.kind == TokenType.RPR:
         stack.append('P')
         stack.append(TokenType.RPR)
@@ -74,7 +66,7 @@ def shift_3(stack, lexer):
     else:
         raise ValueError("Reduce error")
 
-state_machine = {0: shift_0, 1: reduce_1, 2: reduce_2, 3: shift_3}
+state_machine = {0: shift_0, 1: reduce_1, 2: shift_2}
 
 def test_parser(input_str):
     """
@@ -98,6 +90,9 @@ def test_parser(input_str):
 
     >>> test_parser('()()')
     ()() is invalid
+
+    >>> test_parser(')(')
+    )( is invalid
     """
     lexer = Lexer(input_str)
     next_state = 0
