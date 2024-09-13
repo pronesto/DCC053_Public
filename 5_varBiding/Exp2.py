@@ -29,23 +29,6 @@ class Var(Expression):
         else:
             sys.exit(f"Variavel inexistente {self.identifier}")
 
-class Bln(Expression):
-    """
-    This class represents expressions that are boolean values. There are only
-    two boolean values: true and false. The evaluation of such an expression is
-    the boolean itself.
-    """
-    def __init__(self, bln):
-        self.bln = bln
-    def eval(self, _):
-        """
-        Example:
-        >>> e = Bln(True)
-        >>> e.eval(None)
-        True
-        """
-        return self.bln
-
 class Num(Expression):
     """
     This class represents expressions that are numbers. The evaluation of such
@@ -74,29 +57,6 @@ class BinaryExpression(Expression):
     @abstractmethod
     def eval(self, env):
         raise NotImplementedError
-
-class Eql(BinaryExpression):
-    """
-    This class represents the equality between two expressions. The evaluation
-    of such an expression is True if the subexpressions are the same, or false
-    otherwise.
-    """
-    def eval(self, env):
-        """
-        Example:
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> e = Eql(n1, n2)
-        >>> e.eval(None)
-        False
-
-        >>> n1 = Num(3)
-        >>> n2 = Num(3)
-        >>> e = Eql(n1, n2)
-        >>> e.eval(None)
-        True
-        """
-        return self.left.eval(env) == self.right.eval(env)
 
 class Add(BinaryExpression):
     """
@@ -167,112 +127,6 @@ class Div(BinaryExpression):
         5
         """
         return self.left.eval(env) // self.right.eval(env)
-
-class Leq(BinaryExpression):
-    """
-    This class represents comparison of two expressions using the
-    less-than-or-equal comparator. The evaluation of such an expression is a
-    boolean value that is true if the left operand is less than or equal the
-    right operand. It is false otherwise.
-    """
-    def eval(self, env):
-        """
-        Example:
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> e = Leq(n1, n2)
-        >>> e.eval(None)
-        True
-        >>> n1 = Num(3)
-        >>> n2 = Num(3)
-        >>> e = Leq(n1, n2)
-        >>> e.eval(None)
-        True
-        >>> n1 = Num(4)
-        >>> n2 = Num(3)
-        >>> e = Leq(n1, n2)
-        >>> e.eval(None)
-        False
-        """
-        return self.left.eval(env) <= self.right.eval(env)
-
-class Lth(BinaryExpression):
-    """
-    This class represents comparison of two expressions using the
-    less-than comparison operator. The evaluation of such an expression is a
-    boolean value that is true if the left operand is less than the right
-    operand. It is false otherwise.
-    """
-    def eval(self, env):
-        """
-        Example:
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> e = Lth(n1, n2)
-        >>> e.eval(None)
-        True
-        >>> n1 = Num(3)
-        >>> n2 = Num(3)
-        >>> e = Lth(n1, n2)
-        >>> e.eval(None)
-        False
-        >>> n1 = Num(4)
-        >>> n2 = Num(3)
-        >>> e = Lth(n1, n2)
-        >>> e.eval(None)
-        False
-        """
-        return self.left.eval(env) < self.right.eval(env)
-
-class UnaryExpression(Expression):
-    """
-    This class represents unary expressions. A unary expression has only one
-    sub-expression.
-    """
-    def __init__(self, exp):
-        self.exp = exp
-
-    @abstractmethod
-    def eval(self, env):
-        raise NotImplementedError
-
-class Neg(UnaryExpression):
-    """
-    This expression represents the additive inverse of a number. The additive
-    inverse of a number n is the number -n, so that the sum of both is zero.
-    """
-    def eval(self, env):
-        """
-        Example:
-        >>> n = Num(3)
-        >>> e = Neg(n)
-        >>> e.eval(None)
-        -3
-        >>> n = Num(0)
-        >>> e = Neg(n)
-        >>> e.eval(None)
-        0
-        """
-        return -self.exp.eval(env)
-
-class Not(UnaryExpression):
-    """
-    This expression represents the negation of a boolean. The negation of a
-    boolean expression is the logical complement of that expression.
-    """
-    def eval(self, env):
-        """
-        Example:
-        >>> t = Bln(True)
-        >>> e = Not(t)
-        >>> e.eval(None)
-        False
-        >>> t = Bln(False)
-        >>> e = Not(t)
-        >>> e.eval(None)
-        True
-        """
-        return not(self.exp.eval(env))
 
 class Let(Expression):
     """
