@@ -137,102 +137,96 @@ class IfThenElse(Expression):
 
 
 class TypeChecker:
-    def __init__(self):
-        # The environment mapping variable names to their types
-        self.env = {}
-
-    def visit_var(self, var_exp, arg):
+    def visit_var(self, var_exp, env):
         # Look up the variable's type in the environment
-        if var_exp.identifier in self.env:
-            return self.env[var_exp.identifier]
+        if var_exp.identifier in env:
+            return env[var_exp.identifier]
         else:
             raise TypeError(f"Variable {var_exp.identifier} is not defined")
 
-    def visit_num(self, num_exp, arg):
-        # Numbers are always of type 'int'
-        return 'int'
+    def visit_num(self, num_exp, env):
+        # Numbers are always of type int
+        return int
 
-    def visit_bln(self, bln_exp, arg):
-        # Boolean literals are always of type 'bool'
-        return 'bool'
+    def visit_bln(self, bln_exp, env):
+        # Boolean literals are always of type bool
+        return bool
 
-    def visit_add(self, add_exp, arg):
-        # Both operands must be of type 'int'
-        left_type = add_exp.left.accept(self, arg)
-        right_type = add_exp.right.accept(self, arg)
-        if left_type == 'int' and right_type == 'int':
-            return 'int'
+    def visit_add(self, add_exp, env):
+        # Both operands must be of type int
+        left_type = add_exp.left.accept(self, env)
+        right_type = add_exp.right.accept(self, env)
+        if left_type == int and right_type == int:
+            return int
         else:
             raise TypeError(f"Type error: {left_type} + {right_type}")
 
-    def visit_sub(self, sub_exp, arg):
-        # Both operands must be of type 'int'
-        left_type = sub_exp.left.accept(self, arg)
-        right_type = sub_exp.right.accept(self, arg)
-        if left_type == 'int' and right_type == 'int':
-            return 'int'
+    def visit_sub(self, sub_exp, env):
+        # Both operands must be of type int
+        left_type = sub_exp.left.accept(self, env)
+        right_type = sub_exp.right.accept(self, env)
+        if left_type == int and right_type == int:
+            return int
         else:
             raise TypeError(f"Type error: {left_type} - {right_type}")
 
-    def visit_mul(self, mul_exp, arg):
-        # Both operands must be of type 'int'
-        left_type = mul_exp.left.accept(self, arg)
-        right_type = mul_exp.right.accept(self, arg)
-        if left_type == 'int' and right_type == 'int':
-            return 'int'
+    def visit_mul(self, mul_exp, env):
+        # Both operands must be of type int
+        left_type = mul_exp.left.accept(self, env)
+        right_type = mul_exp.right.accept(self, env)
+        if left_type == int and right_type == int:
+            return int
         else:
             raise TypeError(f"Type error: {left_type} * {right_type}")
 
-    def visit_div(self, div_exp, arg):
-        # Both operands must be of type 'int'
-        left_type = div_exp.left.accept(self, arg)
-        right_type = div_exp.right.accept(self, arg)
-        if left_type == 'int' and right_type == 'int':
-            return 'int'
+    def visit_div(self, div_exp, env):
+        # Both operands must be of type int
+        left_type = div_exp.left.accept(self, env)
+        right_type = div_exp.right.accept(self, env)
+        if left_type == int and right_type == int:
+            return int
         else:
             raise TypeError(f"Type error: {left_type} / {right_type}")
 
-    def visit_and(self, and_exp, arg):
-        # Both operands must be of type 'bool'
-        left_type = and_exp.left.accept(self, arg)
-        right_type = and_exp.right.accept(self, arg)
-        if left_type == 'bool' and right_type == 'bool':
-            return 'bool'
+    def visit_and(self, and_exp, env):
+        # Both operands must be of type bool
+        left_type = and_exp.left.accept(self, env)
+        right_type = and_exp.right.accept(self, env)
+        if left_type == bool and right_type == bool:
+            return bool
         else:
             raise TypeError(f"Type error: {left_type} and {right_type}")
 
-    def visit_lth(self, lth_exp, arg):
-        # Both operands must be of type 'int' and result is of type 'bool'
-        left_type = lth_exp.left.accept(self, arg)
-        right_type = lth_exp.right.accept(self, arg)
-        if left_type == 'int' and right_type == 'int':
-            return 'bool'
+    def visit_lth(self, lth_exp, env):
+        # Both operands must be of type int and result is of type bool
+        left_type = lth_exp.left.accept(self, env)
+        right_type = lth_exp.right.accept(self, env)
+        if left_type == int and right_type == int:
+            return bool
         else:
             raise TypeError(f"Type error: {left_type} < {right_type}")
 
-    def visit_let(self, let_exp, arg):
+    def visit_let(self, let_exp, env):
         # Type-check the definition and bind it to the environment
-        def_type = let_exp.exp_def.accept(self, arg)
+        def_type = let_exp.exp_def.accept(self, env)
         if def_type == let_exp.tp_var:
             # Temporarily extend the environment with the new variable
-            old_env = self.env.copy()
-            self.env[let_exp.identifier] = let_exp.tp_var
-            body_type = let_exp.exp_body.accept(self, arg)
+            new_env = dict(env)
+            new_env[let_exp.identifier] = let_exp.tp_var
             # Restore the environment
-            self.env = old_env
-            return body_type
+            return let_exp.exp_body.accept(self, new_env)
         else:
             epct_str = f"expected {let_exp.tp_var}"
             raise TypeError(f"Type error in let: {epct_str} but got {def_type}")
 
-    def visit_ifThenElse(self, if_exp, arg):
-        # The condition must be of type 'bool', and both branches must have
+    def visit_ifThenElse(self, if_exp, env):
+        # The condition must be of type bool, and both branches must have
         # the same type
-        cond_type = if_exp.cond.accept(self, arg)
-        if cond_type != 'bool':
+        cond_type = if_exp.cond.accept(self, env)
+        if cond_type != bool:
             raise TypeError(f"Type error: expected bool but got {cond_type}")
-        then_type = if_exp.e0.accept(self, arg)
-        else_type = if_exp.e1.accept(self, arg)
+        then_type = if_exp.e0.accept(self, env)
+        else_type = if_exp.e1.accept(self, env)
         if then_type == else_type:
             return then_type
         else:
@@ -240,17 +234,152 @@ class TypeChecker:
             else_str = f"else branch is {else_type}"
             raise TypeError(f"Type error: {then_str}, {else_str}")
 
-# Example Usage
-env = {'x': 'int', 'y': 'bool'}
-checker = TypeChecker()
-checker.env = env
+def test_type_checking_rules():
+    # Example Usage
+    env = {'x': int, 'y': bool}
+    checker = TypeChecker()
 
-# Example expressions:
-expr = Add(Var('x'), Num(5))  # x + 5
-print(expr.accept(checker, None))  # Should return 'int'
+    # Example expressions:
+    expr = Add(Var('x'), Num(5))  # x + 5
+    print(expr.accept(checker, env))  # Should return int
 
-expr2 = IfThenElse(Var('y'), Num(1), Num(0))  # if y then 1 else 0
-print(expr2.accept(checker, None))  # Should return 'int'
+    # Example expressions:
+    expr = And(Var('y'), Bln(True))  # y and True
+    print(expr.accept(checker, env))  # Should return bool
 
-expr3 = Let('z', 'int', Num(3), Add(Var('z'), Num(2)))  # let z = 3 in z + 2
-print(expr3.accept(checker, None))  # Should return 'int'
+    expr2 = IfThenElse(Var('y'), Num(1), Num(0))  # if y then 1 else 0
+    print(expr2.accept(checker, env))  # Should return int
+
+    expr3 = Let('z', int, Num(3), Add(Var('z'), Num(2)))  # let z = 3 in z + 2
+    print(expr3.accept(checker, env))  # Should return int
+
+class VisitorTypeSafeEval:
+    def visit_var(self, var, env):
+        if var.identifier in env:
+            return env[var.identifier]
+        else:
+            sys.exit(f"Variable not found {var.identifier}")
+
+    def visit_num(self, num, env):
+        return num.num
+
+    def visit_bln(self, exp, env):
+        return exp.bln
+
+    def visit_add(self, add, env):
+        v0 = add.left.accept(self, env)
+        v1 = add.right.accept(self, env)
+        self.ensure_type(v0, int, "Addition")
+        self.ensure_type(v1, int, "Addition")
+        return v0 + v1
+
+    def visit_sub(self, sub, env):
+        v0 = sub.left.accept(self, env)
+        v1 = sub.right.accept(self, env)
+        self.ensure_type(v0, int, "Subtraction")
+        self.ensure_type(v1, int, "Subtraction")
+        return v0 - v1
+
+    def visit_mul(self, mul, env):
+        v0 = mul.left.accept(self, env)
+        v1 = mul.right.accept(self, env)
+        self.ensure_type(v0, int, "Multiplication")
+        self.ensure_type(v1, int, "Multiplication")
+        return v0 * v1
+
+    def visit_div(self, div, env):
+        v0 = div.left.accept(self, env)
+        v1 = div.right.accept(self, env)
+        self.ensure_type(v0, int, "Division")
+        self.ensure_type(v1, int, "Division")
+        return v0 // v1
+
+    def visit_and(self, exp, env):
+        v0 = exp.left.accept(self, env)
+        self.ensure_type(v0, bool, "And")
+        if v0:
+            v1 = exp.right.accept(self, env)
+            self.ensure_type(v1, bool, "And")
+            return v1
+        return False
+
+    def visit_lth(self, exp, env):
+        v0 = exp.left.accept(self, env)
+        v1 = exp.right.accept(self, env)
+        self.ensure_type(v0, int, "Less Than")
+        self.ensure_type(v1, int, "Less Than")
+        return v0 < v1
+
+    def visit_ifThenElse(self, exp, env):
+        cond = exp.cond.accept(self, env)
+        self.ensure_type(cond, bool, "If-Then-Else Condition")
+        if cond:
+            return exp.e0.accept(self, env)
+        else:
+            return exp.e1.accept(self, env)
+
+    def visit_let(self, let, env):
+        v0 = let.exp_def.accept(self, env)
+        new_env = dict(env)
+        new_env[let.identifier] = v0
+        return let.exp_body.accept(self, new_env)
+
+    def ensure_type(self, value, expected_type, operation_name):
+        #if not isinstance(value, expected_type):
+        if not type(value) == expected_type:
+            op_str = f"Type error in {operation_name}"
+            ex_str = f"expected {expected_type.__name__}"
+            gt_str = f"got {type(value).__name__}"
+            raise TypeError(f"{op_str}: {ex_str}, {gt_str}")
+
+def dynamically_type_safe_eval(e):
+    """
+    Evaluates the expression in a type safe way.
+
+    Example:
+    >>> e0 = Let('w', int, Num(2), Add(Var('v'), Var('w')))
+    >>> e1 = Let('v', int, Num(40), e0)
+    >>> dynamically_type_safe_eval(e1)
+    42
+
+    >>> e0 = Let('w', int, Num(2), And(Var('v'), Var('w')))
+    >>> e1 = Let('v', int, Num(40), e0)
+    >>> dynamically_type_safe_eval(e1)
+    Type error in And: expected bool, got int
+
+    >>> e = IfThenElse(Bln(True), Num(0), Bln(False))
+    >>> dynamically_type_safe_eval(e)
+    0
+    """
+    v = VisitorTypeSafeEval()
+    try:
+        return e.accept(v, {})
+    except TypeError as tp_error:
+        print(tp_error)
+
+def statically_type_safe_eval(e):
+    """
+    Evaluates the expression in a type safe way.
+
+    Example:
+    >>> e0 = Let('w', int, Num(2), Add(Var('v'), Var('w')))
+    >>> e1 = Let('v', int, Num(40), e0)
+    >>> statically_type_safe_eval(e1)
+    42
+
+    >>> e0 = Let('w', int, Num(2), And(Var('v'), Var('w')))
+    >>> e1 = Let('v', int, Num(40), e0)
+    >>> statically_type_safe_eval(e1)
+    Type error: <class 'int'> and <class 'int'>
+
+    >>> e = IfThenElse(Bln(True), Num(0), Bln(False))
+    >>> statically_type_safe_eval(e)
+    Type error: then branch is <class 'int'>, else branch is <class 'bool'>
+    """
+    tp_check = TypeChecker()
+    v = VisitorTypeSafeEval()
+    try:
+        e.accept(tp_check, {})
+        return e.accept(v, {})
+    except TypeError as tp_error:
+        print(tp_error)
