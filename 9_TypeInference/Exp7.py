@@ -160,7 +160,7 @@ class VisitorEval:
         return let.exp_body.accept(self, new_env)
 
 
-class VisitorTypeInfer:
+class VisitorTypePropagator:
     def visit_var(self, var, env):
         if var.identifier in env:
             return env[var.identifier]
@@ -230,5 +230,5 @@ def find_type(e):
     >>> find_type(e)
     <class 'int'>
     """
-    v = VisitorTypeInfer()
+    v = VisitorTypePropagator()
     return e.accept(v, {})
