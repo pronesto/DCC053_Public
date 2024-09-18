@@ -203,9 +203,10 @@ class Function:
         <class 'Exp8.Function'>
     """
 
-    def __init__(self, formal, body):
+    def __init__(self, formal, body, env):
         self.formal = formal
         self.body = body
+        self.env = env
 
     def __str__(self):
         return f"Fn({self.formal})"
@@ -267,13 +268,13 @@ class VisitorEval:
         return let.exp_body.accept(self, new_env)
 
     def visit_fn(self, exp, env):
-        return Function(exp.formal, exp.body)
+        return Function(exp.formal, exp.body, env)
 
     def visit_app(self, exp, env):
         fval = exp.function.accept(self, env)
         if not isinstance(fval, Function):
             sys.exit("Type error")
         pval = exp.actual.accept(self, env)
-        new_env = dict(env)
+        new_env = dict(fval.env)
         new_env[fval.formal] = pval
         return fval.body.accept(self, new_env)
