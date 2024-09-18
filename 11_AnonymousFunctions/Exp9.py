@@ -200,7 +200,7 @@ class Function:
         >>> ev = VisitorEval()
         >>> fval = f.accept(ev, {})
         >>> type(fval)
-        <class 'Exp8.Function'>
+        <class 'Exp9.Function'>
     """
 
     def __init__(self, formal, body, env):
