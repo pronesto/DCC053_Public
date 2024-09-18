@@ -196,11 +196,10 @@ class Function:
     functions. Notice that the evaluation of an expression can now be a
     function. For instance:
 
-        >>> f = Fn('v', Add(Var('v'), Var('v')))
-        >>> ev = VisitorEval()
-        >>> fval = f.accept(ev, {})
-        >>> type(fval)
-        <class 'Exp8.Function'>
+    Example:
+        >>> f = Function('v', Add(Var('v'), Var('v')))
+        >>> print(str(f))
+        Fn(v)
     """
 
     def __init__(self, formal, body):
