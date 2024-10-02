@@ -59,13 +59,16 @@ class Token:
         >>> Token.key_word_token('x').text
         'x'
         """
-        tokens = {}
-        tokens["add"] = Token("+", TokenType.ADD)
-        tokens["sub"] = Token("-", TokenType.SUB)
         if text in tokens:
             return tokens[text]
         else:
             return Token(text, TokenType.VAR)
+
+tokens = {}
+tokens["add"] = Token("+", TokenType.ADD)
+tokens["sub"] = Token("-", TokenType.SUB)
+tokens["mul"] = Token("*", TokenType.MUL)
+tokens["div"] = Token("/", TokenType.DIV)
 
 
 class Lexer:
@@ -162,7 +165,7 @@ class Lexer:
             ):
                 id_text += self.input_string[self.position]
                 self.position += 1
-            return Token.key_word_token(tokText)
+            return Token.key_word_token(id_text)
 
         elif current_char == "+":
             return Token(current_char, TokenType.ADD)
@@ -211,6 +214,18 @@ def compute_postfix(lexer):
         >>> lexer = Lexer("3 4 + 2 * 7 /")
         >>> compute_postfix(lexer)
         2
+
+        >>> lexer = Lexer("3 4 add 2 * 7 /")
+        >>> compute_postfix(lexer)
+        2
+
+        >>> lexer = Lexer("3 4 add 2 mul 7 div")
+        >>> compute_postfix(lexer)
+        2
+
+        >>> lexer = Lexer("4 3 sub")
+        >>> compute_postfix(lexer)
+        1
 
         >>> lexer = Lexer("4 2 5 * + 1 3 2 * + /")
         >>> compute_postfix(lexer)
