@@ -1,4 +1,5 @@
 import enum
+from Exp import *
 
 
 class TokenType(enum.Enum):
@@ -28,6 +29,8 @@ class Token:
         numbers.
         kind (TokenType): The type of the token, which classifies it based on
         its role in the expression.
+
+
     """
 
     # A list of tokens that represent operators in arithmetic expressions:
@@ -40,6 +43,20 @@ class Token:
         Parameters:
             tokenText (str): The actual text of the token.
             tokenKind (TokenType): The type of the token defined in TokenType.
+
+
+        Example:
+            >>> token = Token("3", TokenType.NUM)
+            >>> token.text
+            '3'
+            >>> token.kind == TokenType.NUM
+            True
+
+            >>> token = Token("+", TokenType.ADD)
+            >>> token.text
+            '+'
+            >>> token.kind == TokenType.ADD
+            True
         """
         self.text = tokenText
         self.kind = tokenKind
@@ -58,6 +75,13 @@ class Lexer:
         input_string (str): The string to be tokenized.
         position (int): The current position in the input string.
         length (int): The length of the input string.
+    Example:
+        >>> lexer = Lexer("3 + 4")
+        >>> token = lexer.next_valid_token()
+        >>> token.text
+        '3'
+        >>> token.kind == TokenType.NUM
+        True
     """
 
     def __init__(self, input_string):
@@ -66,6 +90,11 @@ class Lexer:
 
         Parameters:
             input_string (str): The string to be tokenized.
+
+        Example:
+            >>> lexer = Lexer("1 + 2")
+            >>> lexer.input_string
+            '1 + 2'
         """
         self.input_string = input_string
         self.position = 0
@@ -80,6 +109,14 @@ class Lexer:
 
         Returns:
             Token: The next valid token in the input stream.
+
+        Example:
+            >>> lexer = Lexer("  2 + 3 ")
+            >>> token = lexer.next_valid_token()
+            >>> token.text
+            '2'
+            >>> lexer.next_valid_token().text
+            '+'
         """
         token = self.getToken()
         if token.kind == TokenType.WSP or token.kind == TokenType.NLN:
@@ -96,6 +133,11 @@ class Lexer:
 
         Yields:
             Token: The next valid token in the input stream.
+
+        Example:
+            >>> lexer = Lexer("(3 + 2)")
+            >>> [token.text for token in lexer.tokens()]
+            ['(', '3', '+', '2', ')']
         """
         token = self.getToken()
         while token.kind != TokenType.EOF:
@@ -113,6 +155,15 @@ class Lexer:
 
         Returns:
             Token: The next token identified in the input string.
+
+        Example:
+            >>> lexer = Lexer("3 + 4")
+            >>> lexer.getToken().text
+            '3'
+            >>> lexer.getToken().text
+            ' '
+            >>> lexer.getToken().text
+            '+'
         """
         if self.position >= self.length:
             return Token("", TokenType.EOF)
