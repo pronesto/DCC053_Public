@@ -46,7 +46,7 @@ class Parser:
     >>> e.eval()
     10
 
-    >>> lexer = Lexer("2 - 3 - 4")
+    >>> lexer = Lexer("(2 - 3) - 4")
     >>> parser = Parser(lexer)
     >>> e = parser.E()
     >>> e.eval()
