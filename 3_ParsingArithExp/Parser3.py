@@ -1,6 +1,7 @@
 from Exp import *
 from Lexer import *
 
+
 class Parser:
     """
     This class implements a parser for infix arithmetic expressions.
@@ -59,25 +60,51 @@ class Parser:
     >>> e.eval()
     -5
     """
-    def __init__(self, lexer):
+
+    def __init__(self, lexer: Lexer) -> None:
         self.lexer = lexer
         self.current_token = self.lexer.next_valid_token()
 
-    def eat(self, token_type):
+    def eat(self, token_type: TokenType) -> None:
         if self.current_token.kind == token_type:
             self.current_token = self.lexer.next_valid_token()
         else:
             raise ValueError(f"Unexpected token: {self.current_token.kind}")
 
-    def E(self):
+    def E(self) -> Expression:
         """
+        Parse an expression according to the production rule:
+
+        E ::= T EE
+
+        Returns:
+            exp (Expression): An expression node representing the complete
+            expression.
         """
+
         exp = self.T()
         return self.EE(exp)
 
-    def EE(self, left):
+    def EE(self, left: Expression) -> Expression:
         """
+        Parse the remainder of an expression that includes addition or subtraction.
+
+        This method corresponds to the production rule:
+
+        EE ::= '+' T EE
+            | '-' T EE
+            | empty
+
+        Parameters:
+            left (Expression): the left-hand side expression of the current
+            expression.
+
+        Returns:
+            Expression: an expression node representing either the left side, or
+            a larger expression incorporating additional addition or subtraction
+            operations.
         """
+
         token = self.current_token
 
         if token.kind == TokenType.ADD:
@@ -93,15 +120,38 @@ class Parser:
         # If no more operators, return the current node.
         return left
 
-    def T(self):
+    def T(self) -> Expression:
         """
+        Parse a term according to the production rule:
+
+        T ::= F TT
+
+        Returns:
+            exp (Expression): an expression node representing the complete term.
         """
+
         exp = self.F()
         return self.TT(exp)
 
-    def TT(self, left):
+    def TT(self, left: Expression) -> Expression:
         """
+        Parse the remainder of a term that includes multiplication or division.
+
+        This method corresponds to the production rule:
+
+        TT ::= '*' F TT
+            | '/' F TT
+            | empty
+
+        Parameters:
+            left (Expression): the left-hand side expression of the current term.
+
+        Returns:
+            Expression: an expression node representing either the left side, or
+            a larger expression incorporating additional multiplication or
+            division operations.
         """
+
         token = self.current_token
 
         if token.kind == TokenType.MUL:
@@ -117,9 +167,20 @@ class Parser:
         # If no more operators, return the current node.
         return left
 
-    def F(self):
+    def F(self) -> Expression:
         """
+        Parse a factor, which is either a number or a parenthesized expression.
+
+        This method corresponds to the production rule:
+
+        F ::= num
+            | '(' E ')'
+
+        Returns:
+            Expression: an expression node representing a number or a
+            parenthesized expression.
         """
+
         token = self.current_token
 
         if token.kind == TokenType.NUM:
@@ -131,4 +192,3 @@ class Parser:
             node = self.E()
             self.eat(TokenType.RPR)  # ')'
             return node
-
