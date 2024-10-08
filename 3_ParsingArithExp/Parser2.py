@@ -1,6 +1,7 @@
 from Exp import *
 from Lexer import *
 
+
 class Parser:
     """
     This class implements a parser for infix arithmetic expressions.
@@ -12,9 +13,9 @@ class Parser:
     T ::= F ('*' T | '/' T | empty)
 
     F ::= num
-	| '(' E ')'
+        | '(' E ')'
 
-    Example:
+    Examples:
     >>> lexer = Lexer("2 + 3 + 4")
     >>> parser = Parser(lexer)
     >>> e = parser.E()
@@ -51,19 +52,32 @@ class Parser:
     >>> e.eval()
     -5
     """
-    def __init__(self, lexer):
+
+    def __init__(self, lexer: Lexer) -> None:
         self.lexer = lexer
         self.current_token = self.lexer.next_valid_token()
 
-    def eat(self, token_type):
+    def eat(self, token_type: TokenType) -> None:
         if self.current_token.kind == token_type:
             self.current_token = self.lexer.next_valid_token()
         else:
             raise ValueError(f"Unexpected token: {self.current_token.kind}")
 
-    def E(self):
+    def E(self) -> Expression:
         """
+        Parse an expression that can include addition or subtraction.
+
+        This case implements the productions:
+
+        F ::= '+' E F
+            | '-' E F
+            | empty
+
+        Returns:
+            exp (Expression): an expression node representing either a term, an
+            addition, or a subtraction.
         """
+
         exp = self.T()
         token = self.current_token
 
@@ -79,9 +93,21 @@ class Parser:
 
         return exp
 
-    def T(self):
+    def T(self) -> Expression:
         """
+        Parse an expression that can include multiplication or division.
+
+        This case implements the productions:
+
+        F ::= '*' E F
+            | '/' E F
+            | empty
+
+        Returns:
+            exp (Expression): an expression node representing either a term, a
+            multiplication, or a division.
         """
+
         exp = self.F()
         token = self.current_token
 
@@ -97,9 +123,20 @@ class Parser:
 
         return exp
 
-    def F(self):
+    def F(self) -> Expression:
         """
+        Parse a factor, which is either a number or a parenthesized expression.
+
+        This method corresponds to the production rule:
+
+        F ::= num
+            | '(' E ')'
+
+        Returns:
+            exp (Expression): an expression node representing a number or a
+            parenthesized expression.
         """
+
         token = self.current_token
 
         if token.kind == TokenType.NUM:
