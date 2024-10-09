@@ -1,20 +1,33 @@
 import sys
 from abc import ABC, abstractmethod
 
+
 class Expression(ABC):
+    """
+    Abstract base class for all expressions.
+    """
+
     @abstractmethod
     def eval(self, env):
         raise NotImplementedError
+
 
 class Var(Expression):
     """
     This class represents expressions that are identifiers. The value of an
     indentifier is the value associated with it in the environment table.
+
+    Attributes:
+        identifier (str): The name of the variable.
     """
+
     def __init__(self, identifier):
         self.identifier = identifier
+
     def eval(self, env):
         """
+        Evaluates the variable by looking up its value in the environment.
+
         Example:
         >>> e = Var('var')
         >>> e.eval({'var': 42})
@@ -28,14 +41,18 @@ class Var(Expression):
             return env[self.identifier]
         else:
             sys.exit(f"Variavel inexistente {self.identifier}")
+
     def size(self):
         """
+        Returns the size of the expression, which is 1.
+
         Example:
         >>> e = Var('var')
         >>> e.size()
         1
         """
         return 1
+
     def __str__(self):
         """
         Example:
@@ -45,29 +62,41 @@ class Var(Expression):
         """
         return self.identifier
 
+
 class Num(Expression):
     """
     This class represents expressions that are numbers. The evaluation of such
     an expression is the number itself.
+
+    Attributes:
+        num (int): The numerical value.
     """
+
     def __init__(self, num):
         self.num = num
+
     def eval(self, _):
         """
+        Evaluates the number (returns the number itself).
+
         Example:
         >>> e = Num(3)
         >>> e.eval(None)
         3
         """
         return self.num
+
     def size(self):
         """
+        Returns the size of the expression, which is 1.
+
         Example:
         >>> e = Num(3)
         >>> e.size()
         1
         """
         return 1
+
     def __str__(self):
         """
         Example:
@@ -77,11 +106,17 @@ class Num(Expression):
         """
         return str(self.num)
 
+
 class BinaryExpression(Expression):
     """
     This class represents binary expressions. A binary expression has two
     sub-expressions: the left operand and the right operand.
+
+    Attributes:
+        left (Expression): The left sub-expression.
+        right (Expression): The right sub-expression.
     """
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -89,8 +124,12 @@ class BinaryExpression(Expression):
     @abstractmethod
     def eval(self, env):
         raise NotImplementedError
+
     def size(self):
         """
+        Returns the size of the binary expression, which is the size of its two
+        subexpressions plus one for the variable binding.
+
         Example:
         >>> e = Add(Var('x'), Num(2))
         >>> e.size()
@@ -98,13 +137,17 @@ class BinaryExpression(Expression):
         """
         return 1 + self.left.size() + self.right.size()
 
+
 class Add(BinaryExpression):
     """
     This class represents addition of two expressions. The evaluation of such
     an expression is the addition of the two subexpression's values.
     """
+
     def eval(self, env):
         """
+        Evaluates the addition expression.
+
         Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
@@ -113,6 +156,7 @@ class Add(BinaryExpression):
         7
         """
         return self.left.eval(env) + self.right.eval(env)
+
     def __str__(self):
         """
         >>> n1 = Num(3)
@@ -123,13 +167,17 @@ class Add(BinaryExpression):
         """
         return f"({str(self.left)} + {str(self.right)})"
 
+
 class Sub(BinaryExpression):
     """
     This class represents subtraction of two expressions. The evaluation of such
     an expression is the subtraction of the two subexpression's values.
     """
+
     def eval(self, env):
         """
+        Evaluates the subtraction expression.
+
         Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
@@ -138,6 +186,7 @@ class Sub(BinaryExpression):
         -1
         """
         return self.left.eval(env) - self.right.eval(env)
+
     def __str__(self):
         """
         >>> n1 = Num(3)
@@ -148,13 +197,17 @@ class Sub(BinaryExpression):
         """
         return f"({str(self.left)} - {str(self.right)})"
 
+
 class Mul(BinaryExpression):
     """
     This class represents multiplication of two expressions. The evaluation of
     such an expression is the product of the two subexpression's values.
     """
+
     def eval(self, env):
         """
+        Evaluates the multiplication expression.
+
         Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
@@ -163,6 +216,7 @@ class Mul(BinaryExpression):
         12
         """
         return self.left.eval(env) * self.right.eval(env)
+
     def __str__(self):
         """
         >>> n1 = Num(3)
@@ -173,14 +227,18 @@ class Mul(BinaryExpression):
         """
         return f"({str(self.left)} * {str(self.right)})"
 
+
 class Div(BinaryExpression):
     """
     This class represents the integer division of two expressions. The
     evaluation of such an expression is the integer quocient of the two
     subexpression's values.
     """
+
     def eval(self, env):
         """
+        Evaluates the division expression.
+
         Example:
         >>> n1 = Num(28)
         >>> n2 = Num(4)
@@ -194,6 +252,7 @@ class Div(BinaryExpression):
         5
         """
         return self.left.eval(env) // self.right.eval(env)
+
     def __str__(self):
         """
         >>> n1 = Num(28)
@@ -204,19 +263,29 @@ class Div(BinaryExpression):
         """
         return f"({str(self.left)} / {str(self.right)})"
 
+
 class Let(Expression):
     """
     This class represents a let expression. The semantics of a let expression,
     such as "let v <- e0 in e1" on an environment env is as follows:
     1. Evaluate e0 in the environment env, yielding e0_val
     2. Evaluate e1 in the new environment env' = env + {v:e0_val}
+
+    Attributes:
+        identifier (str): The name of the variable being bound.
+        exp_def (Expression): The expression defining the value of the variable.
+        exp_body (Expression): The body expression where the variable is used.
     """
+
     def __init__(self, identifier, exp_def, exp_body):
         self.identifier = identifier
         self.exp_def = exp_def
         self.exp_body = exp_body
+
     def eval(self, env):
         """
+        Evaluates the let expression by evaluating `exp_def` and binding its result to `identifier`.
+
         Example:
         >>> e = Let('v', Num(42), Var('v'))
         >>> e.eval({})
@@ -232,10 +301,14 @@ class Let(Expression):
         """
         e0_val = self.exp_def.eval(env)
         new_env = dict(env)
-        new_env[self.identifier]= e0_val
+        new_env[self.identifier] = e0_val
         return self.exp_body.eval(new_env)
+
     def size(self):
         """
+        Returns the size of the let expression, which is the size of its two
+        subexpressions plus two for the variable binding.
+
         Example:
         >>> e = Let('v', Num(42), Var('v'))
         >>> e.size()
@@ -250,6 +323,7 @@ class Let(Expression):
         8
         """
         return 2 + self.exp_def.size() + self.exp_body.size()
+
     def __str__(self):
         """
         Example:
@@ -268,6 +342,7 @@ class Let(Expression):
         str_def = str(self.exp_def)
         str_body = str(self.exp_body)
         return f"let {self.identifier} = {str_def} in {str_body} end"
+
 
 def to_str(e):
     """
