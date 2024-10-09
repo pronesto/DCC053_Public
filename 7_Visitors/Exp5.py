@@ -1,63 +1,93 @@
 import sys
 from abc import ABC, abstractmethod
 
+
 class Expression(ABC):
+    """
+    Abstract base class for all expressions.
+    """
+
     @abstractmethod
     def accept(self, visitor):
         pass
+
 
 class Var(Expression):
     """
     This class represents expressions that are identifiers. The value of an
     indentifier is the value associated with it in the environment table.
+
+    Attributes:
+        identifier (str): The name of the variable.
     """
+
     def __init__(self, identifier):
         self.identifier = identifier
+
     def accept(self, visitor, arg):
         return visitor.visit_var(self, arg)
+
 
 class Num(Expression):
     """
     This class represents expressions that are numbers. The evaluation of such
     an expression is the number itself.
+
+    Attributes:
+        num (int): The numerical value.
     """
+
     def __init__(self, num):
         self.num = num
+
     def accept(self, visitor, arg):
         return visitor.visit_num(self, arg)
+
 
 class BinaryExpression(Expression):
     """
     This class represents binary expressions. A binary expression has two
     sub-expressions: the left operand and the right operand.
+
+    Attributes:
+        left (Expression): The left operand.
+        right (Expression): The right operand.
     """
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
+
 
 class Add(BinaryExpression):
     """
     This class represents addition of two expressions. The evaluation of such
     an expression is the addition of the two subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_add(self, arg)
+
 
 class Sub(BinaryExpression):
     """
     This class represents subtraction of two expressions. The evaluation of such
     an expression is the subtraction of the two subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_sub(self, arg)
+
 
 class Mul(BinaryExpression):
     """
     This class represents multiplication of two expressions. The evaluation of
     such an expression is the product of the two subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_mul(self, arg)
+
 
 class Div(BinaryExpression):
     """
@@ -65,8 +95,10 @@ class Div(BinaryExpression):
     evaluation of such an expression is the integer quocient of the two
     subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_div(self, arg)
+
 
 class Let(Expression):
     """
@@ -74,13 +106,21 @@ class Let(Expression):
     such as "let v <- e0 in e1" on an environment env is as follows:
     1. Evaluate e0 in the environment env, yielding e0_val
     2. Evaluate e1 in the new environment env' = env + {v:e0_val}
+
+    Attributes:
+        identifier (str): The name of the variable being bound.
+        exp_def (Expression): The defining expression.
+        exp_body (Expression): The body expression.
     """
+
     def __init__(self, identifier, exp_def, exp_body):
         self.identifier = identifier
         self.exp_def = exp_def
         self.exp_body = exp_body
+
     def accept(self, visitor, arg):
         return visitor.visit_let(self, arg)
+
 
 class VisitorStr:
     """
@@ -102,32 +142,34 @@ class VisitorStr:
     >>> print(e.accept(v, None))
     let v = (40 + 2) in (v * v) end
     """
+
     def visit_var(self, var, arg):
         return var.identifier
-    
+
     def visit_num(self, num, arg):
         return str(num.num)
-    
+
     def visit_add(self, add, arg):
         return f"({add.left.accept(self, arg)} + {add.right.accept(self, arg)})"
-    
+
     def visit_sub(self, sub, arg):
         return f"({sub.left.accept(self, arg)} - {sub.right.accept(self, arg)})"
-    
+
     def visit_mul(self, mul, arg):
         return f"({mul.left.accept(self, arg)} * {mul.right.accept(self, arg)})"
-    
+
     def visit_div(self, div, arg):
         return f"({div.left.accept(self, arg)} / {div.right.accept(self, arg)})"
-    
+
     def visit_let(self, let, arg):
         def_str = let.exp_def.accept(self, arg)
         def_body = let.exp_body.accept(self, arg)
         return f"let {let.identifier} = {def_str} in {def_body} end"
 
+
 class VisitorEval:
     """
-    Pretty print an expression based on its type.
+    Evaluate an expression based on its type and an environment.
 
     Example:
     >>> e = Let('v', Num(42), Var('v'))
@@ -145,32 +187,34 @@ class VisitorEval:
     >>> print(e.accept(v, {}))
     1764
     """
+
     def visit_var(self, var, env):
         if var.identifier in env:
             return env[var.identifier]
         else:
             sys.exit(f"Variavel inexistente {var.identifier}")
-    
+
     def visit_num(self, num, env):
         return num.num
-    
+
     def visit_add(self, add, env):
         return add.left.accept(self, env) + add.right.accept(self, env)
-    
+
     def visit_sub(self, sub, env):
         return sub.left.accept(self, env) - sub.right.accept(self, env)
-    
+
     def visit_mul(self, mul, env):
         return mul.left.accept(self, env) * mul.right.accept(self, env)
-    
+
     def visit_div(self, div, env):
         return div.left.accept(self, env) // div.right.accept(self, env)
-    
+
     def visit_let(self, let, env):
         e0_val = let.exp_def.accept(self, env)
         new_env = dict(env)
-        new_env[let.identifier]= e0_val
+        new_env[let.identifier] = e0_val
         return let.exp_body.accept(self, new_env)
+
 
 class VisitorOptimize:
     """
@@ -192,40 +236,41 @@ class VisitorOptimize:
     >>> print(e1.accept(printer, None))
     let v = 2 in (40 + v) end
     """
+
     def visit_var(self, var, env):
         return var
-    
+
     def visit_num(self, num, env):
         return num
-    
+
     def visit_add(self, add, env):
         left = add.left.accept(self, env)
         right = add.right.accept(self, env)
         if isinstance(left, Num) and isinstance(right, Num):
             return Num(left.num + right.num)
         return Add(left, right)
-    
+
     def visit_sub(self, sub, env):
         left = sub.left.accept(self, env)
         right = sub.right.accept(self, env)
         if isinstance(left, Num) and isinstance(right, Num):
             return Num(left.num - right.num)
         return Sub(left, right)
-    
+
     def visit_mul(self, mul, env):
         left = mul.left.accept(self, env)
         right = mul.right.accept(self, env)
         if isinstance(left, Num) and isinstance(right, Num):
             return Num(left.num * right.num)
         return Mul(left, right)
-    
+
     def visit_div(self, div, env):
         left = div.left.accept(self, env)
         right = div.right.accept(self, env)
         if isinstance(left, Num) and isinstance(right, Num):
             return Num(left.num // right.num)
         return Div(left, right)
-    
+
     def visit_let(self, let, env):
         new_def = let.exp_def.accept(self, env)
         new_body = let.exp_body.accept(self, env)
