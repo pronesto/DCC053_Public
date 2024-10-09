@@ -169,7 +169,7 @@ class VisitorStr:
 
 class VisitorEval:
     """
-    Evaluate an expression based on its type and an environment.
+    Evaluates an expression based on its type and an environment.
 
     Example:
     >>> e = Let('v', Num(42), Var('v'))
