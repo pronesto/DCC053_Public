@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
+
 class Expression(ABC):
     """
     Abstract base class for all expressions.
@@ -15,9 +16,10 @@ class Expression(ABC):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[bool, int, type]:
         pass
+
 
 class Var(Expression):
     """
@@ -56,7 +58,7 @@ class Var(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> int:
         """
         Accept a visitor in this variable.
@@ -76,7 +78,8 @@ class Var(Expression):
 
         return visitor.visit_var(self, arg)
 
-class Num(Expression): 
+
+class Num(Expression):
     """
     This class represents expressions that are numbers. The evaluation of such
     an expression is the number itself.
@@ -112,7 +115,7 @@ class Num(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
         """
         Accept a visitor in this number.
@@ -132,6 +135,7 @@ class Num(Expression):
         """
 
         return visitor.visit_num(self, arg)
+
 
 class Bln(Expression):
     """
@@ -170,7 +174,7 @@ class Bln(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
         """
         Accept a visitor in this boolean.
@@ -190,6 +194,7 @@ class Bln(Expression):
         """
 
         return visitor.visit_bln(self, arg)
+
 
 class BinaryExpression(Expression):
     """
@@ -218,7 +223,7 @@ class BinaryExpression(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
         """
         Accept a visitor in this binary expression.
@@ -238,6 +243,7 @@ class BinaryExpression(Expression):
         """
 
         pass
+
 
 class Add(BinaryExpression):
     """
@@ -277,10 +283,10 @@ class Add(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_add(self, arg)
+
 
 class Sub(BinaryExpression):
     """
@@ -320,10 +326,10 @@ class Sub(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_sub(self, arg)
+
 
 class Mul(BinaryExpression):
     """
@@ -363,10 +369,10 @@ class Mul(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_mul(self, arg)
+
 
 class Div(BinaryExpression):
     """
@@ -407,10 +413,10 @@ class Div(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_div(self, arg)
+
 
 class And(BinaryExpression):
     """
@@ -451,10 +457,10 @@ class And(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_and(self, arg)
+
 
 class Lth(BinaryExpression):
     """
@@ -496,10 +502,10 @@ class Lth(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_lth(self, arg)
+
 
 class Let(Expression):
     """
@@ -554,7 +560,7 @@ class Let(Expression):
         identifier: str,
         type_identifier: type,
         exp_def: Expression,
-        exp_body: Expression
+        exp_body: Expression,
     ):
         self.identifier = identifier
         self.type_identifier = type_identifier
@@ -564,10 +570,10 @@ class Let(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_let(self, arg)
+
 
 class IfThenElse(Expression):
     """
@@ -626,9 +632,8 @@ class IfThenElse(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, Union[bool, int, type]]
+        arg: dict[str, Union[bool, int, type]],
     ) -> Union[type, int]:
-
         return visitor.visit_ifThenElse(self, arg)
 
 
@@ -1275,21 +1280,21 @@ def test_type_checking_rules() -> None:
     """Run additional usage examples of `TypeChecker`."""
 
     # Example Usage
-    env = {'x': int, 'y': bool}
+    env = {"x": int, "y": bool}
     checker = TypeChecker()
 
     # Example expressions:
-    expr = Add(Var('x'), Num(5))  # x + 5
+    expr = Add(Var("x"), Num(5))  # x + 5
     print(expr.accept(checker, env))  # Should return int
 
     # Example expressions:
-    expr = And(Var('y'), Bln(True))  # y and True
+    expr = And(Var("y"), Bln(True))  # y and True
     print(expr.accept(checker, env))  # Should return bool
 
-    expr2 = IfThenElse(Var('y'), Num(1), Num(0))  # if y then 1 else 0
+    expr2 = IfThenElse(Var("y"), Num(1), Num(0))  # if y then 1 else 0
     print(expr2.accept(checker, env))  # Should return int
 
-    expr3 = Let('z', int, Num(3), Add(Var('z'), Num(2)))  # let z = 3 in z + 2
+    expr3 = Let("z", int, Num(3), Add(Var("z"), Num(2)))  # let z = 3 in z + 2
     print(expr3.accept(checker, env))  # Should return int
 
 
@@ -1599,10 +1604,10 @@ class VisitorTypeSafeEval:
 
         v0 = div.left.accept(self, env)
         v1 = div.right.accept(self, env)
- 
+
         self.ensure_type(v0, int, "Division")
         self.ensure_type(v1, int, "Division")
- 
+
         return v0 // v1
 
     def visit_and(self, exp: And, env: dict[str, Union[bool, int]]) -> bool:
@@ -1641,13 +1646,13 @@ class VisitorTypeSafeEval:
 
         v0 = exp.left.accept(self, env)
         self.ensure_type(v0, bool, "And")
- 
+
         if v0:
             v1 = exp.right.accept(self, env)
             self.ensure_type(v1, bool, "And")
 
             return v1
- 
+
         return False
 
     def visit_lth(self, exp: Lth, env: dict[str, Union[bool, int]]) -> bool:
@@ -1755,9 +1760,7 @@ class VisitorTypeSafeEval:
         return let.exp_body.accept(self, new_env)
 
     def visit_ifThenElse(
-        self,
-        exp: IfThenElse,
-        env: dict[str, Union[bool, int]]
+        self, exp: IfThenElse, env: dict[str, Union[bool, int]]
     ) -> Union[bool, int]:
         """
         Evaluate an `if/else` expression after type-checking it.
@@ -1799,7 +1802,7 @@ class VisitorTypeSafeEval:
         self,
         value: Union[bool, int],
         expected_type: Union[bool, int],
-        operation_name: str
+        operation_name: str,
     ) -> None:
         """
         Ensure the type of `value` is `expected_type`.
