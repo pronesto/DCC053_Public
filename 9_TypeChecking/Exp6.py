@@ -1,73 +1,369 @@
 import sys
+
 from abc import ABC, abstractmethod
+from typing import Union
 
 class Expression(ABC):
+    """
+    Abstract base class for all expressions.
+
+    Methods:
+    --------
+    accept():
+        Abstract method that should be implemented to accept a visitor.
+    """
+
     @abstractmethod
-    def accept(self, visitor):
+    def accept(self, visitor: Union["TypeChecker", "VisitorTypeSafeEval"]) -> Union[type, int]:
         pass
 
 class Var(Expression):
     """
     This class represents expressions that are identifiers. The value of an
-    indentifier is the value associated with it in the environment table.
+    identifier is the value associated with it in the environment table.
+
+    Attributes:
+    -----------
+    identifier : str
+        The variable identifier (i.e., its name).
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the result from the `visit_var` method of the given `visitor`,
+        considering some environment defined in `arg`.
+
+    Examples:
+    ---------
+    >>> var = Var("abc")
+    >>> visitor = TypeChecker()
+    >>> arg = {"abc": 23}
+    >>> var.accept(visitor, arg)
+    23
+
+    >>> var = Var("abc")
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"abc": True}
+    >>> var.accept(visitor, arg)
+    True
     """
-    def __init__(self, identifier):
+
+    def __init__(self, identifier: str) -> None:
         self.identifier = identifier
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> int:
+        """
+        Accept a visitor in this variable.
+
+        Parameters:
+        -----------
+        visitor : TypeChecker or VisitorTypeSafeEval
+            An instance of a visitor class.
+        arg : dict[str, int]
+            The environment to evaluate.
+
+        Returns:
+        --------
+        : int
+            The contents of this variable in the given enviroment.
+        """
+
         return visitor.visit_var(self, arg)
 
-class Num(Expression):
+class Num(Expression): 
     """
     This class represents expressions that are numbers. The evaluation of such
     an expression is the number itself.
+
+    Attributes:
+    -----------
+    num : int
+        The numeric value of this expression.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the result from the `visit_num` method of the given `visitor`.
+
+    Examples:
+    ---------
+    >>> num = Num(23)
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> num.accept(visitor, arg)
+    <class 'int'>
+
+    >>> num = Num(23)
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"abc": 123}
+    >>> num.accept(visitor, arg)
+    23
     """
-    def __init__(self, num):
+
+    def __init__(self, num: int) -> None:
         self.num = num
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+        """
+        Accept a visitor in this number.
+
+        Parameters:
+        -----------
+        visitor : TypeChecker or VisitorTypeSafeEval
+            An instance of a visitor class.
+        arg : dict[str, int]
+            The environment to evaluate.
+
+        Returns:
+        --------
+        : Union[type, int]
+            The type (if `visitor` is `TypeChecker`) or the value (if `visitor`
+            is `VisitorTypeSafeEval`) of this number.
+        """
+
         return visitor.visit_num(self, arg)
 
 class Bln(Expression):
     """
     This class represents expressions that are boolean values. There are only
-    two boolean values: true and false. The acceptation of such an expression is
-    the boolean itself.
+    two boolean values: `True` and `False`. The acceptation of such an
+    expression is the boolean itself.
+
+    Attributes:
+    -----------
+    bln : bool
+        The boolean value of this expression.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the result from the `visit_bln` method of the given `visitor`.
+
+    Examples:
+    ---------
+    >>> bln = Bln(True)
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> bln.accept(visitor, arg)
+    <class 'bool'>
+
+    >>> bln = Bln(True)
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {}
+    >>> bln.accept(visitor, arg)
+    True
     """
-    def __init__(self, bln):
+
+    def __init__(self, bln: bool) -> None:
         self.bln = bln
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+        """
+        Accept a visitor in this boolean.
+
+        Parameters:
+        -----------
+        visitor : TypeChecker or VisitorTypeSafeEval
+            An instance of a visitor class.
+        arg : dict[str, int]
+            The environment to evaluate.
+
+        Returns:
+        --------
+        : Union[type, bool]
+            The type (if `visitor` is `TypeChecker`) or the value (if `visitor`
+            is `VisitorTypeSafeEval`) of this boolean.
+        """
+
         return visitor.visit_bln(self, arg)
 
 class BinaryExpression(Expression):
     """
     This class represents binary expressions. A binary expression has two
     sub-expressions: the left operand and the right operand.
+
+    Attributes:
+    -----------
+    left : Expression
+        The left operand of the binary expression.
+    right : Expression
+        The right operand of the binary expression.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Abstract method that should be implemented to accept a visit in each
+        subclass.
     """
-    def __init__(self, left, right):
+
+    def __init__(self, left: Expression, right: Expression) -> None:
         self.left = left
         self.right = right
+
+    @abstractmethod
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+        """
+        Accept a visitor in this binary expression.
+
+        Parameters:
+        -----------
+        visitor : TypeChecker or VisitorTypeSafeEval
+            An instance of a visitor class.
+        arg : dict[str, int]
+            The environment to evaluate.
+
+        Returns:
+        --------
+        : Union[type, bool]
+            The type (if `visitor` is `TypeChecker`) or the resulting value (if
+            `visitor` is `VisitorTypeSafeEval`) of this binary expression.
+        """
+
+        pass
 
 class Add(BinaryExpression):
     """
     This class represents addition of two expressions. The evaluation of such
     an expression is the addition of the two subexpression's values.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of addition between the left and right
+        expressions.
+
+    Examples:
+    ---------
+    >>> add = Add(left=Num(23), right=Num(6))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> add.accept(visitor, arg)
+    <class 'int'>
+
+    >>> try:
+    ...     add = Add(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     add.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot add int to bool")
+    Error raised as expected: cannot add int to bool
+
+    >>> add = Add(left=Num(23), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": 1}
+    >>> add.accept(visitor, arg)
+    24
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_add(self, arg)
 
 class Sub(BinaryExpression):
     """
     This class represents subtraction of two expressions. The evaluation of such
     an expression is the subtraction of the two subexpression's values.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of subtraction between the left and right
+        expressions.
+
+    Examples:
+    ---------
+    >>> sub = Sub(left=Num(23), right=Num(6))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> sub.accept(visitor, arg)
+    <class 'int'>
+
+    >>> try:
+    ...     sub = Sub(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     sub.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot subtract bool from int")
+    Error raised as expected: cannot subtract bool from int
+
+    >>> sub = Sub(left=Num(24), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": 4}
+    >>> sub.accept(visitor, arg)
+    20
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_sub(self, arg)
 
 class Mul(BinaryExpression):
     """
     This class represents multiplication of two expressions. The evaluation of
     such an expression is the product of the two subexpression's values.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of multiplication between the left and
+        right expressions.
+
+    Examples:
+    ---------
+    >>> mul = Mul(left=Num(23), right=Num(6))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> mul.accept(visitor, arg)
+    <class 'int'>
+
+    >>> try:
+    ...     mul = Mul(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     mul.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot multiply int and bool")
+    Error raised as expected: cannot multiply int and bool
+
+    >>> mul = Mul(left=Num(24), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": 4}
+    >>> mul.accept(visitor, arg)
+    96
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_mul(self, arg)
 
 class Div(BinaryExpression):
@@ -75,8 +371,43 @@ class Div(BinaryExpression):
     This class represents the integer division of two expressions. The
     evaluation of such an expression is the integer quocient of the two
     subexpression's values.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of division between the left and right
+        expressions.
+
+    Examples:
+    ---------
+    >>> div = Div(left=Num(23), right=Num(6))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> div.accept(visitor, arg)
+    <class 'int'>
+
+    >>> try:
+    ...     div = Div(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     div.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot divide int by bool")
+    Error raised as expected: cannot divide int by bool
+
+    >>> div = Div(left=Num(24), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": 4}
+    >>> div.accept(visitor, arg)
+    6
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_div(self, arg)
 
 class And(BinaryExpression):
@@ -84,18 +415,88 @@ class And(BinaryExpression):
     This class represents the logical disjunction of two boolean expressions.
     The evaluation of an expression of this kind is the logical AND of the two
     subexpression's values.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of conjunction between the left and right
+        expressions.
+
+    Examples:
+    ---------
+    >>> _and = And(left=Bln(True), right=Bln(False))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> _and.accept(visitor, arg)
+    <class 'bool'>
+
+    >>> try:
+    ...     _and = And(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     _and.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot compute logical and between int and bool")
+    Error raised as expected: cannot compute logical and between int and bool
+
+    >>> _and = And(left=Bln(True), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": True}
+    >>> _and.accept(visitor, arg)
+    True
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_and(self, arg)
 
 class Lth(BinaryExpression):
     """
     This class represents comparison of two expressions using the
-    less-than comparison operator. The acceptuation of such an expression is a
+    less-than comparison operator. The acceptation of such an expression is a
     boolean value that is true if the left operand is less than the right
     operand. It is false otherwise.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the type or the result of comparison between the left and right
+        expressions.
+
+    Examples:
+    ---------
+    >>> lth = Lth(left=Num(5), right=Num(10))
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> lth.accept(visitor, arg)
+    <class 'bool'>
+
+    >>> try:
+    ...     lth = Lth(left=Num(23), right=Bln(True))
+    ...     visitor = TypeChecker()
+    ...     arg = {}
+    ...     lth.accept(visitor, arg)
+    ... except TypeError:
+    ...     print("Error raised as expected: cannot compare int to bool with `less-than`")
+    Error raised as expected: cannot compare int to bool with `less-than`
+
+    >>> lth = Lth(left=Num(23), right=Var("a"))
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {"a": 6}
+    >>> lth.accept(visitor, arg)
+    False
     """
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_lth(self, arg)
 
 class Let(Expression):
@@ -109,30 +510,123 @@ class Let(Expression):
     associated with types. For instance, if we create an expression like:
     Let('v', int, e0, e1), then we are saying that variable 'v' must have
     type int.
+
+    Attributes:
+    -----------
+    identifier : str
+        The variable identifier (i.e., its name).
+    type_identifier : type (values = `int` or `bool`)
+        The variable type. Must be `int` or `bool`.
+    exp_def : Expression (values = `Num` or `Bln`)
+        The expression that defines the variable. Must be `Num` or `Bln`.
+    exp_body : Expression
+        The expression to evaluate considering this variable.
+
+    Examples:
+    ---------
+    >>> let = Let(
+    ...     identifier='x',
+    ...     type_identifier=int,
+    ...     exp_def=Num(23),
+    ...     exp_body=Add(Var('x'), Num(5))
+    ... )
+    >>> visitor = TypeChecker()
+    >>> arg = {}
+    >>> let.accept(visitor, arg)
+    <class 'int'>
+
+    >>> let = Let(
+    ...     identifier='x',
+    ...     type_identifier=int,
+    ...     exp_def=Num(23),
+    ...     exp_body=Add(Var('x'), Var('y'))
+    ... )
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {'y': 6}
+    >>> let.accept(visitor, arg)
+    29
     """
-    def __init__(self, identifier, type_identifier, exp_def, exp_body):
+
+    def __init__(
+        self,
+        identifier: str,
+        type_identifier: type,
+        exp_def: Expression,
+        exp_body: Expression
+    ):
         self.identifier = identifier
-        self.tp_var = type_identifier
+        self.type_identifier = type_identifier
         self.exp_def = exp_def
         self.exp_body = exp_body
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_let(self, arg)
 
 class IfThenElse(Expression):
     """
-    This class represents a conditional expression. The semantics an expression
-    such as 'if B then E0 else E1' is as follows:
-    1. Evaluate B. Call the result ValueB.
-    2. If ValueB is True, then evalute E0 and return the result.
-    3. If ValueB is False, then evaluate E1 and return the result.
+    This class represents a conditional expression. The semantics of an
+    expression such as 'if B then E0 else E1' is as follows:
+
+    1. Evaluate B. Call the result `ValueB`.
+    2. If `ValueB` is True, then evalute `E0` and return the result.
+    3. If ValueB is False, then evaluate `E1` and return the result.
+
     Notice that we only evaluate one of the two sub-expressions, not both. Thus,
     "if True then 0 else 1 div 0" will return 0 indeed.
+
+    Attributes:
+    -----------
+    cond : Expression
+        A `bool`-typed expression.
+    e0 : Expression
+        Expression to evaluate if `cond` is `True`.
+    e1 : Expression
+        Expression to evaluate if `cond` is `False`.
+
+    Methods:
+    --------
+    accept(visitor, arg):
+        Returns the result from the `visit_var` method of the given `visitor`,
+        considering some environment defined in `arg`.
+
+    Examples:
+    ---------
+    >>> cond = Lth(Var('x'), Var('y'))
+    >>> e0 = Let('z', int, Num(10), Add(Var('z'), Var('x')))
+    >>> e1 = Let('z', int, Num(10), Add(Var('z'), Var('y')))
+    >>> if_then_else = IfThenElse(cond, e0, e1)
+    >>> visitor = TypeChecker()
+    >>> arg = {'x': int, 'y': int}
+    >>> if_then_else.accept(visitor, arg)
+    <class 'int'>
+
+    >>> # If `x` < `y`, then evaluate (z + x); if not, evaluate (z + y)
+    >>> cond = Lth(Var('x'), Var('y'))
+    >>> e0 = Let('z', int, Num(10), Add(Var('z'), Var('x')))
+    >>> e1 = Let('z', int, Num(10), Add(Var('z'), Var('y')))
+    >>> if_then_else = IfThenElse(cond, e0, e1)
+    >>> visitor = VisitorTypeSafeEval()
+    >>> arg = {'x': 20, 'y': 30}
+    >>> if_then_else.accept(visitor, arg)
+    30
     """
-    def __init__(self, cond, e0, e1):
+
+    def __init__(self, cond: Expression, e0: Expression, e1: Expression):
         self.cond = cond
         self.e0 = e0
         self.e1 = e1
-    def accept(self, visitor, arg):
+
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, int]
+    ) -> Union[type, int]:
+
         return visitor.visit_ifThenElse(self, arg)
 
 
@@ -209,14 +703,14 @@ class TypeChecker:
     def visit_let(self, let_exp, env):
         # Type-check the definition and bind it to the environment
         def_type = let_exp.exp_def.accept(self, env)
-        if def_type == let_exp.tp_var:
+        if def_type == let_exp.type_identifier:
             # Temporarily extend the environment with the new variable
             new_env = dict(env)
-            new_env[let_exp.identifier] = let_exp.tp_var
+            new_env[let_exp.identifier] = let_exp.type_identifier
             # Restore the environment
             return let_exp.exp_body.accept(self, new_env)
         else:
-            epct_str = f"expected {let_exp.tp_var}"
+            epct_str = f"expected {let_exp.type_identifier}"
             raise TypeError(f"Type error in let: {epct_str} but got {def_type}")
 
     def visit_ifThenElse(self, if_exp, env):
