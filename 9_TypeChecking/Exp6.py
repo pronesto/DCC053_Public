@@ -1,5 +1,3 @@
-import sys
-
 from abc import ABC, abstractmethod
 from typing import Union
 
@@ -9,12 +7,16 @@ class Expression(ABC):
 
     Methods:
     --------
-    accept():
+    accept(visitor, arg):
         Abstract method that should be implemented to accept a visitor.
     """
 
     @abstractmethod
-    def accept(self, visitor: Union["TypeChecker", "VisitorTypeSafeEval"]) -> Union[type, int]:
+    def accept(
+        self,
+        visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
+        arg: dict[str, Union[bool, int, type]]
+    ) -> Union[bool, int, type]:
         pass
 
 class Var(Expression):
@@ -54,7 +56,7 @@ class Var(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> int:
         """
         Accept a visitor in this variable.
@@ -63,7 +65,7 @@ class Var(Expression):
         -----------
         visitor : TypeChecker or VisitorTypeSafeEval
             An instance of a visitor class.
-        arg : dict[str, int]
+        arg : dict[str, Union[bool, int, type]]
             The environment to evaluate.
 
         Returns:
@@ -110,7 +112,7 @@ class Num(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
         """
         Accept a visitor in this number.
@@ -119,7 +121,7 @@ class Num(Expression):
         -----------
         visitor : TypeChecker or VisitorTypeSafeEval
             An instance of a visitor class.
-        arg : dict[str, int]
+        arg : dict[str, Union[bool, int, type]]
             The environment to evaluate.
 
         Returns:
@@ -168,7 +170,7 @@ class Bln(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
         """
         Accept a visitor in this boolean.
@@ -177,7 +179,7 @@ class Bln(Expression):
         -----------
         visitor : TypeChecker or VisitorTypeSafeEval
             An instance of a visitor class.
-        arg : dict[str, int]
+        arg : dict[str, Union[bool, int, type]]
             The environment to evaluate.
 
         Returns:
@@ -216,7 +218,7 @@ class BinaryExpression(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
         """
         Accept a visitor in this binary expression.
@@ -225,7 +227,7 @@ class BinaryExpression(Expression):
         -----------
         visitor : TypeChecker or VisitorTypeSafeEval
             An instance of a visitor class.
-        arg : dict[str, int]
+        arg : dict[str, Union[bool, int, type]]
             The environment to evaluate.
 
         Returns:
@@ -275,7 +277,7 @@ class Add(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_add(self, arg)
@@ -318,7 +320,7 @@ class Sub(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_sub(self, arg)
@@ -361,7 +363,7 @@ class Mul(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_mul(self, arg)
@@ -405,7 +407,7 @@ class Div(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_div(self, arg)
@@ -449,7 +451,7 @@ class And(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_and(self, arg)
@@ -494,7 +496,7 @@ class Lth(BinaryExpression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_lth(self, arg)
@@ -562,7 +564,7 @@ class Let(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_let(self, arg)
@@ -624,7 +626,7 @@ class IfThenElse(Expression):
     def accept(
         self,
         visitor: Union["TypeChecker", "VisitorTypeSafeEval"],
-        arg: dict[str, int]
+        arg: dict[str, Union[bool, int, type]]
     ) -> Union[type, int]:
 
         return visitor.visit_ifThenElse(self, arg)
@@ -667,10 +669,10 @@ class TypeChecker:
         Visit a `Lth` operation and type-check it.
 
     visit_let(let_exp, env):
-        Visit a `Let` operation and type-check it.
+        Visit a `Let` expression and type-check it.
 
     visit_ifThenElse(if_exp, env):
-        Visit a `IfThenElse` operation and type-check it.
+        Visit a `IfThenElse` expression and type-check it.
     """
 
     def visit_var(self, var_exp: Var, env: dict[str, type]) -> type:
@@ -681,7 +683,7 @@ class TypeChecker:
         -----------
         var_exp : Var
             The `Var` representation of this variable.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -727,7 +729,7 @@ class TypeChecker:
         num_exp : Var
             The `Num` representation of this number. This parameter is
             required, but ignored.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types. This
             parameter is required, but ignored.
 
@@ -757,7 +759,7 @@ class TypeChecker:
         bln_exp : Var
             The `Bln` representation of this boolean. This parameter is
             required, but ignored.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types. This
             parameter is required, but ignored.
 
@@ -790,7 +792,7 @@ class TypeChecker:
         -----------
         add_exp : Add
             The `Add` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -848,7 +850,7 @@ class TypeChecker:
         -----------
         sub_exp : Sub
             The `Sub` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -906,7 +908,7 @@ class TypeChecker:
         -----------
         mul_exp : Mul
             The `Mul` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -964,7 +966,7 @@ class TypeChecker:
         -----------
         div_exp : Div
             The `Div` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -1022,7 +1024,7 @@ class TypeChecker:
         -----------
         and_exp : And
             The `And` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -1080,7 +1082,7 @@ class TypeChecker:
         -----------
         lth_exp : Lth
             The `Lth` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -1135,7 +1137,7 @@ class TypeChecker:
         -----------
         let_exp : Let
             The `Let` representation of this operation.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
@@ -1212,12 +1214,12 @@ class TypeChecker:
         -----------
         if_exp : IfThenElse
             The `IfThenElse` representation of this expression.
-        env : dict[str, type]
+        env : dict[str, Union[bool, int]]
             A mapping between variables identifiers and their types.
 
         Returns:
         --------
-        : type[int]
+        : type[int, bool]
             The type of the expression.
 
         Examples:
@@ -1292,89 +1294,544 @@ def test_type_checking_rules() -> None:
 
 
 class VisitorTypeSafeEval:
-    def visit_var(self, var, env):
+    """
+    This class implements a visitor that evaluates expressions in a type-safe
+    manner.
+
+    This class does not have any attributes.
+
+    Methods:
+    --------
+    visit_var(var, env):
+        Visit a variable and return its value.
+
+    visit_num(num, env):
+        Visit a number and return its value.
+
+    visit_bln(bln, env):
+        Visit a boolean and return its value.
+
+    visit_add(add, env):
+        Visit an `Add` operation, type-check it, and evaluate it.
+
+    visit_sub(sub, env):
+        Visit a `Sub` operation, type-check it, and evaluate it.
+
+    visit_mul(mul, env):
+        Visit a `Mul` operation, type-check it, and evaluate it.
+
+    visit_div(div, env):
+        Visit a `Div` operation, type-check it, and evaluate it.
+
+    visit_and(exp, env):
+        Visit an `And` operation, type-check it, and evaluate it.
+
+    visit_lth(exp, env):
+        Visit a `Lth` operation, type-check it, and evaluate it.
+
+    visit_let(exp, env):
+        Visit a `Let` expression, type-check it, and evaluate it.
+
+    visit_ifThenElse(exp, env):
+        Visit a `IfThenElse` expression, type-check it, and evaluate it.
+
+    ensure_type(value, expected_type, operation_name):
+        Ensure the type of `value` is the same as `expected_type`.
+    """
+
+    def visit_var(self, var: Var, env: dict[str, Union[bool, int]]) -> Union[bool, int]:
+        """
+        Evaluate a variable.
+
+        Parameters:
+        -----------
+        var : Var
+            The `Var` representation of this variable.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : Union[bool, int]
+            The contents of the variable in the given `env`.
+
+        Examples:
+        ---------
+        >>> var = Var("some_var")
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {"some_var": 4}
+        >>> var.accept(visitor, arg)
+        4
+
+        >>> try:
+        ...     var = Var("some_var")
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {"some_other_var": int}
+        ...     var.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Variable not found some_var
+
+        Raises:
+        -------
+        TypeError
+            Raised if the variable's identifier is not found in `env`.
+        """
+
         if var.identifier in env:
             return env[var.identifier]
         else:
-            sys.exit(f"Variable not found {var.identifier}")
+            raise TypeError(f"Variable not found {var.identifier}")
 
-    def visit_num(self, num, env):
+    def visit_num(self, num: Num, env: dict[str, Union[bool, int]]) -> int:
+        """
+        Evaluate a number.
+
+        Parameters:
+        -----------
+        num : Num
+            The `Num` representation of this number.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types. This
+            parameter is required, but ignored.
+
+        Returns:
+        --------
+        : int
+            The value of this number.
+
+        Examples:
+        >>> num = Num(23)
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> num.accept(visitor, arg)
+        23
+        """
+
         return num.num
 
-    def visit_bln(self, exp, env):
+    def visit_bln(self, exp: Bln, env: dict[str, Union[bool, int]]) -> bool:
+        """
+        Evaluate a boolean.
+
+        Parameters:
+        -----------
+        exp : Bln
+            The `Bln` representation of this boolean.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types. This
+            parameter is required, but ignored.
+
+        Returns:
+        --------
+        : bool
+            The value of this number.
+
+        Examples:
+        >>> exp = Bln(True)
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> exp.accept(visitor, arg)
+        True
+        """
+
         return exp.bln
 
-    def visit_add(self, add, env):
+    def visit_add(self, add: Add, env: dict[str, Union[bool, int]]) -> int:
+        """
+        Evaluate an addition after type-checking it.
+
+        Parameters:
+        -----------
+        add : Add
+            The `Add` representation of this operation.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : int
+            The result of this addition, if type-valid.
+
+        Examples:
+        ---------
+        >>> add = Add(left=Num(23), right=Num(6))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> add.accept(visitor, arg)
+        29
+
+        >>> try:
+        ...     add = Add(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     add.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in Addition: expected int, got bool
+        """
+
         v0 = add.left.accept(self, env)
         v1 = add.right.accept(self, env)
+
         self.ensure_type(v0, int, "Addition")
         self.ensure_type(v1, int, "Addition")
+
         return v0 + v1
 
-    def visit_sub(self, sub, env):
+    def visit_sub(self, sub: Sub, env: dict[str, Union[bool, int]]):
+        """
+        Evaluate a subtraction after type-checking it.
+
+        Parameters:
+        -----------
+        sub : Sub
+            The `Sub` representation of this operation.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : int
+            The result of this subtraction, if type-valid.
+
+        Examples:
+        ---------
+        >>> sub = Sub(left=Num(23), right=Num(6))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> sub.accept(visitor, arg)
+        17
+
+        >>> try:
+        ...     sub = Sub(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     sub.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in Subtraction: expected int, got bool
+        """
+
         v0 = sub.left.accept(self, env)
         v1 = sub.right.accept(self, env)
+
         self.ensure_type(v0, int, "Subtraction")
         self.ensure_type(v1, int, "Subtraction")
+
         return v0 - v1
 
-    def visit_mul(self, mul, env):
+    def visit_mul(self, mul: Mul, env: dict[str, Union[bool, int]]) -> int:
+        """
+        Evaluate a multiplication after type-checking it.
+
+        Parameters:
+        -----------
+        mul : Mul
+            The `Mul` representation of this operation.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : int
+            The result of this multiplication, if type-valid.
+
+        Examples:
+        ---------
+        >>> mul = Mul(left=Num(23), right=Num(6))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> mul.accept(visitor, arg)
+        138
+
+        >>> try:
+        ...     mul = Mul(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     mul.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in Multiplication: expected int, got bool
+        """
+
         v0 = mul.left.accept(self, env)
         v1 = mul.right.accept(self, env)
+
         self.ensure_type(v0, int, "Multiplication")
         self.ensure_type(v1, int, "Multiplication")
+
         return v0 * v1
 
-    def visit_div(self, div, env):
+    def visit_div(self, div: Div, env: dict[str, Union[bool, int]]) -> int:
+        """
+        Evaluate a division after type-checking it.
+
+        Parameters:
+        -----------
+        div : Div
+            The `Div` representation of this operation.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : int
+            The result of this division, if type-valid.
+
+        Examples:
+        ---------
+        >>> div = Div(left=Num(23), right=Num(6))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> div.accept(visitor, arg)
+        3
+
+        >>> try:
+        ...     div = Div(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     div.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in Division: expected int, got bool
+        """
+
         v0 = div.left.accept(self, env)
         v1 = div.right.accept(self, env)
+ 
         self.ensure_type(v0, int, "Division")
         self.ensure_type(v1, int, "Division")
+ 
         return v0 // v1
 
-    def visit_and(self, exp, env):
+    def visit_and(self, exp: And, env: dict[str, Union[bool, int]]) -> bool:
+        """
+        Evaluate a `logical and` expression after type-checking it.
+
+        Parameters:
+        -----------
+        exp : And
+            The `And` representation of this expression.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : bool
+            The result of this expression, if type-valid.
+
+        Examples:
+        ---------
+        >>> _and = And(left=Bln(True), right=Bln(True))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> _and.accept(visitor, arg)
+        True
+
+        >>> try:
+        ...     _and = And(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     _and.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in And: expected bool, got int
+        """
+
         v0 = exp.left.accept(self, env)
         self.ensure_type(v0, bool, "And")
+ 
         if v0:
             v1 = exp.right.accept(self, env)
             self.ensure_type(v1, bool, "And")
+
             return v1
+ 
         return False
 
-    def visit_lth(self, exp, env):
+    def visit_lth(self, exp: Lth, env: dict[str, Union[bool, int]]) -> bool:
+        """
+        Evaluate a `less than` expression after type-checking it.
+
+        Parameters:
+        -----------
+        exp : Lth
+            The `Lth` representation of this expression.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : bool
+            The result of this expression, if type-valid.
+
+        Examples:
+        ---------
+        >>> lth = Lth(left=Num(23), right=Num(6))
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> lth.accept(visitor, arg)
+        False
+
+        >>> try:
+        ...     lth = Lth(left=Num(23), right=Bln(True))
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     lth.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in Less Than: expected int, got bool
+        """
+
         v0 = exp.left.accept(self, env)
         v1 = exp.right.accept(self, env)
+
         self.ensure_type(v0, int, "Less Than")
         self.ensure_type(v1, int, "Less Than")
+
         return v0 < v1
 
-    def visit_ifThenElse(self, exp, env):
+    def visit_let(self, let: Let, env: dict[str, Union[bool, int]]) -> Union[bool, int]:
+        """
+        Evaluate a `let` expression after type-checking it.
+
+        Parameters:
+        -----------
+        let : Let
+            The `Let` representation of this operation.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : Union[bool, int]
+            The result of `let.exp_body` evaluation.
+
+        Examples:
+        ---------
+        >>> let = Let(
+        ...     identifier='x',
+        ...     type_identifier=int,
+        ...     exp_def=Num(23),
+        ...     exp_body=Add(Var('x'), Var('y'))
+        ... )
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {'y': 7}
+        >>> let.accept(visitor, arg)
+        30
+
+        >>> let = Let(
+        ...     identifier='x',
+        ...     type_identifier=bool,
+        ...     exp_def=Bln(False),
+        ...     exp_body=And(Var('x'), Bln(True))
+        ... )
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {}
+        >>> let.accept(visitor, arg)
+        False
+
+        >>> try:
+        ...     let = Let(
+        ...         identifier='x',
+        ...         type_identifier=bool,
+        ...         exp_def=Num(1),
+        ...         exp_body=And(Var('x'), Bln(True))
+        ...     )
+        ...     visitor = VisitorTypeSafeEval()
+        ...     arg = {}
+        ...     let.accept(visitor, arg)
+        ... except TypeError as e:
+        ...     print(e)
+        Type error in And: expected bool, got int
+        """
+
+        v0 = let.exp_def.accept(self, env)
+
+        new_env = dict(env)
+        new_env[let.identifier] = v0
+
+        return let.exp_body.accept(self, new_env)
+
+    def visit_ifThenElse(
+        self,
+        exp: IfThenElse,
+        env: dict[str, Union[bool, int]]
+    ) -> Union[bool, int]:
+        """
+        Evaluate an `if/else` expression after type-checking it.
+
+        Parameters:
+        -----------
+        exp : IfThenElse
+            The `IfThenElse` representation of this expression.
+        env : dict[str, Union[bool, int]]
+            A mapping between variables identifiers and their types.
+
+        Returns:
+        --------
+        : Union[bool, int]
+            The result of evaluated branch.
+
+        Examples:
+        ---------
+        >>> cond = Lth(Var('x'), Var('y'))
+        >>> e0 = Let('z', int, Num(10), Add(Var('z'), Var('x')))
+        >>> e1 = Let('z', int, Num(10), Add(Var('z'), Var('y')))
+        >>> if_then_else = IfThenElse(cond, e0, e1)
+        >>> visitor = VisitorTypeSafeEval()
+        >>> arg = {'x': 23, 'y': 10}
+        >>> if_then_else.accept(visitor, arg)
+        20
+        """
+
         cond = exp.cond.accept(self, env)
         self.ensure_type(cond, bool, "If-Then-Else Condition")
+
         if cond:
             return exp.e0.accept(self, env)
+
         else:
             return exp.e1.accept(self, env)
 
-    def visit_let(self, let, env):
-        v0 = let.exp_def.accept(self, env)
-        new_env = dict(env)
-        new_env[let.identifier] = v0
-        return let.exp_body.accept(self, new_env)
+    def ensure_type(
+        self,
+        value: Union[bool, int],
+        expected_type: Union[bool, int],
+        operation_name: str
+    ) -> None:
+        """
+        Ensure the type of `value` is `expected_type`.
 
-    def ensure_type(self, value, expected_type, operation_name):
-        #if not isinstance(value, expected_type):
+        Parameters:
+        -----------
+        value : Union[bool, int]
+            The value whose type is being evaluated.
+        expected_type : Union[bool, int]
+            The expected type `value` should have.
+        operation_name : str
+            The name of the operation in which this method was called.
+        """
+
         if not type(value) == expected_type:
             op_str = f"Type error in {operation_name}"
             ex_str = f"expected {expected_type.__name__}"
             gt_str = f"got {type(value).__name__}"
             raise TypeError(f"{op_str}: {ex_str}, {gt_str}")
 
-def dynamically_type_safe_eval(e):
-    """
-    Evaluates the expression in a type safe way.
 
-    Example:
+def dynamically_type_safe_eval(e: Expression) -> Union[bool, int, type]:
+    """
+    Evaluates the expression in a type safe way, dinamically.
+
+    Parameters:
+    -----------
+    e : Expression
+        The expression to evaluate.
+
+    Examples:
+    ---------
     >>> e0 = Let('w', int, Num(2), Add(Var('v'), Var('w')))
     >>> e1 = Let('v', int, Num(40), e0)
     >>> dynamically_type_safe_eval(e1)
@@ -1389,17 +1846,26 @@ def dynamically_type_safe_eval(e):
     >>> dynamically_type_safe_eval(e)
     0
     """
+
     v = VisitorTypeSafeEval()
+
     try:
         return e.accept(v, {})
     except TypeError as tp_error:
         print(tp_error)
 
-def statically_type_safe_eval(e):
-    """
-    Evaluates the expression in a type safe way.
 
-    Example:
+def statically_type_safe_eval(e) -> Union[bool, int, type]:
+    """
+    Evaluates the expression in a type safe way, statically.
+
+    Parameters:
+    -----------
+    e : Expression
+        The expression to evaluate.
+
+    Examples:
+    ---------
     >>> e0 = Let('w', int, Num(2), Add(Var('v'), Var('w')))
     >>> e1 = Let('v', int, Num(40), e0)
     >>> statically_type_safe_eval(e1)
@@ -1414,10 +1880,13 @@ def statically_type_safe_eval(e):
     >>> statically_type_safe_eval(e)
     Type error: then branch is <class 'int'>, else branch is <class 'bool'>
     """
+
     tp_check = TypeChecker()
     v = VisitorTypeSafeEval()
+
     try:
         e.accept(tp_check, {})
         return e.accept(v, {})
+
     except TypeError as tp_error:
         print(tp_error)
