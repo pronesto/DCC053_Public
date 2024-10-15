@@ -12,7 +12,7 @@ class Expression(ABC):
     """
 
     @abstractmethod
-    def eval(self):
+    def eval(self) -> int:
         raise NotImplementedError
 
 
@@ -42,7 +42,7 @@ class Num(Expression):
     """
 
     def __init__(self, num: int) -> None:
-        self.num: int = num
+        self.num = num
 
     def eval(self) -> int:
         """
@@ -153,6 +153,7 @@ class Add(BinaryExpression):
     def __str__(self) -> str:
         """
         Example:
+        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Add(n1, n2)
@@ -198,6 +199,7 @@ class Sub(BinaryExpression):
     def __str__(self) -> str:
         """
         Example:
+        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Sub(n1, n2)
@@ -243,6 +245,7 @@ class Mul(BinaryExpression):
     def __str__(self) -> str:
         """
         Example:
+        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Mul(n1, n2)
@@ -296,6 +299,7 @@ class Div(BinaryExpression):
     def __str__(self) -> str:
         """
         Example:
+        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Div(n1, n2)
@@ -311,6 +315,7 @@ def evaluate(exp: Expression) -> int:
     Evaluate an arithmetic expression.
 
     Examples:
+    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e = Div(n1, n2)
@@ -332,6 +337,7 @@ def print_prefix(exp: Expression) -> str:
     Obtain the string representation of the expression in prefix notation.
 
     Examples:
+    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
@@ -363,6 +369,7 @@ def print_infix(exp) -> str:
     Obtain the string representation of the expression in infix notation.
 
     Examples:
+    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
@@ -394,6 +401,7 @@ def print_postfix(exp) -> str:
     Obtain the string representation of the expression in postfix notation.
 
     Examples:
+    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
