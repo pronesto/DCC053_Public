@@ -1,11 +1,12 @@
 import enum
+
+from typing import Iterator
+
 from Exp import *
 
 
 class TokenType(enum.Enum):
-    """
-    These class defines the possible tokens that we consider.
-    """
+    """Definitions of possible tokens to be considered."""
 
     EOF = -1  # End of file
     NLN = 0  # New line
@@ -34,7 +35,7 @@ class Token:
     # A list of tokens that represent operators in arithmetic expressions:
     operators = {TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV}
 
-    def __init__(self, tokenText, tokenKind):
+    def __init__(self, tokenText: str, tokenKind: TokenType) -> None:
         """
         Initializes a Token object with its text and type.
 
@@ -42,6 +43,7 @@ class Token:
             tokenText (str): The actual text of the token.
             tokenKind (TokenType): The type of the token defined in TokenType.
         """
+
         self.text = tokenText
         self.kind = tokenKind
 
@@ -61,18 +63,19 @@ class Lexer:
         length (int): The length of the input string.
     """
 
-    def __init__(self, input_string):
+    def __init__(self, input_string: str) -> None:
         """
         Initializes the lexer with the input string that will be scanned.
 
         Parameters:
             input_string (str): The string to be tokenized.
         """
+
         self.input_string = input_string
         self.position = 0
         self.length = len(input_string)
 
-    def next_valid_token(self):
+    def next_valid_token(self) -> Token:
         """
         Retrieves the next valid token that is not a white space or a new line.
 
@@ -80,14 +83,31 @@ class Lexer:
         line and returns the first non-whitespace token found.
 
         Returns:
-            Token: The next valid token in the input stream.
+            token (Token): The next valid token in the input stream.
+
+        Examples:
+            >>> lexer = Lexer("1 2 +")
+            >>> next_valid_token = lexer.next_valid_token()
+            >>> print(vars(next_valid_token))
+            {'text': '1', 'kind': <TokenType.NUM: 2>}
+
+            >>> next_valid_token = lexer.next_valid_token()
+            >>> print(vars(next_valid_token))
+            {'text': '2', 'kind': <TokenType.NUM: 2>}
+
+            >>> next_valid_token = lexer.next_valid_token()
+            >>> print(vars(next_valid_token))
+            {'text': '+', 'kind': <TokenType.ADD: 202>}
         """
+
         token = self.getToken()
-        if token.kind == TokenType.WSP or token.kind == TokenType.NLN:
+
+        if token.kind in [TokenType.WSP, TokenType.NLN]:
             token = self.next_valid_token()
+
         return token
 
-    def tokens(self):
+    def tokens(self) -> Iterator[Token]:
         """
         Generator that yields valid tokens from the input string, ignoring
         white spaces and new lines.
@@ -97,14 +117,29 @@ class Lexer:
 
         Yields:
             Token: The next valid token in the input stream.
+
+        Examples:
+            >>> lexer = Lexer("1 2 +")
+            >>> token_iterator = lexer.tokens()
+            >>> print(vars(next(token_iterator)))
+            {'text': '1', 'kind': <TokenType.NUM: 2>}
+
+            >>> print(vars(next(token_iterator)))
+            {'text': '2', 'kind': <TokenType.NUM: 2>}
+
+            >>> print(vars(next(token_iterator)))
+            {'text': '+', 'kind': <TokenType.ADD: 202>}
         """
+
         token = self.getToken()
+
         while token.kind != TokenType.EOF:
-            if token.kind != TokenType.WSP and token.kind != TokenType.NLN:
+            if token.kind not in [TokenType.WSP, TokenType.NLN]:
                 yield token
+
             token = self.getToken()
 
-    def getToken(self):
+    def getToken(self) -> Token:
         """
         Retrieves the next token from the input string.
 
@@ -114,7 +149,34 @@ class Lexer:
 
         Returns:
             Token: The next token identified in the input string.
+
+        Examples:
+            >>> lexer = Lexer("1 2 +")
+            >>> token = lexer.getToken()
+            >>> vars(token)
+            {'text': '1', 'kind': <TokenType.NUM: 2>}
+
+            >>> token = lexer.getToken()
+            >>> vars(token)
+            {'text': ' ', 'kind': <TokenType.WSP: 1>}
+
+            >>> token = lexer.getToken()
+            >>> vars(token)
+            {'text': '2', 'kind': <TokenType.NUM: 2>}
+
+            >>> token = lexer.getToken()
+            >>> vars(token)
+            {'text': ' ', 'kind': <TokenType.WSP: 1>}
+
+            >>> token = lexer.getToken()
+            >>> vars(token)
+            {'text': '+', 'kind': <TokenType.ADD: 202>}
+
+        Raises:
+            ValueError: Raised if the character is not associated with any known
+            tokens.
         """
+
         if self.position >= self.length:
             return Token("", TokenType.EOF)
 
@@ -160,7 +222,7 @@ class Lexer:
             raise ValueError(f"Unexpected character: {current_char}")
 
 
-def compute_prefix(lexer):
+def compute_prefix(lexer: Lexer) -> Expression:
     """
     Converts an arithmetic expression in Polish Notation to an expression tree.
 

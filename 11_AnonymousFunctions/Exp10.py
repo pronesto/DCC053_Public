@@ -1,30 +1,38 @@
 import sys
 from abc import ABC, abstractmethod
 
+
 class Expression(ABC):
     @abstractmethod
     def accept(self, visitor):
         pass
+
 
 class Var(Expression):
     """
     This class represents expressions that are identifiers. The value of an
     indentifier is the value associated with it in the environment table.
     """
+
     def __init__(self, identifier):
         self.identifier = identifier
+
     def accept(self, visitor, arg):
         return visitor.visit_var(self, arg)
+
 
 class Num(Expression):
     """
     This class represents expressions that are numbers. The evaluation of such
     an expression is the number itself.
     """
+
     def __init__(self, num):
         self.num = num
+
     def accept(self, visitor, arg):
         return visitor.visit_num(self, arg)
+
 
 class Bln(Expression):
     """
@@ -32,19 +40,24 @@ class Bln(Expression):
     two boolean values: true and false. The acceptation of such an expression is
     the boolean itself.
     """
+
     def __init__(self, bln):
         self.bln = bln
+
     def accept(self, visitor, arg):
         return visitor.visit_bln(self, arg)
+
 
 class BinaryExpression(Expression):
     """
     This class represents binary expressions. A binary expression has two
     sub-expressions: the left operand and the right operand.
     """
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
+
 
 class And(BinaryExpression):
     """
@@ -52,16 +65,20 @@ class And(BinaryExpression):
     The evaluation of an expression of this kind is the logical AND of the two
     subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_and(self, arg)
+
 
 class Add(BinaryExpression):
     """
     This class represents addition of two expressions. The evaluation of such
     an expression is the addition of the two subexpression's values.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_add(self, arg)
+
 
 class Lth(BinaryExpression):
     """
@@ -70,8 +87,10 @@ class Lth(BinaryExpression):
     boolean value that is true if the left operand is less than the right
     operand. It is false otherwise.
     """
+
     def accept(self, visitor, arg):
         return visitor.visit_lth(self, arg)
+
 
 class Let(Expression):
     """
@@ -80,12 +99,15 @@ class Let(Expression):
     1. Evaluate e0 in the environment env, yielding e0_val
     2. Evaluate e1 in the new environment env' = env + {v:e0_val}
     """
+
     def __init__(self, identifier, exp_def, exp_body):
         self.identifier = identifier
         self.exp_def = exp_def
         self.exp_body = exp_body
+
     def accept(self, visitor, arg):
         return visitor.visit_let(self, arg)
+
 
 class IfThenElse(Expression):
     """
@@ -97,12 +119,97 @@ class IfThenElse(Expression):
     Notice that we only evaluate one of the two sub-expressions, not both. Thus,
     "if True then 0 else 1 div 0" will return 0 indeed.
     """
+
     def __init__(self, cond, e0, e1):
         self.cond = cond
         self.e0 = e0
         self.e1 = e1
+
     def accept(self, visitor, arg):
         return visitor.visit_ifThenElse(self, arg)
+
+
+class Fn(Expression):
+    """
+    This class represents an anonymous function.
+
+        >>> f = Fn('v', Add(Var('v'), Var('v')))
+        >>> ev = VisitorEval()
+        >>> print(f.accept(ev, {}))
+        Fn(v)
+    """
+
+    def __init__(self, formal, body):
+        self.formal = formal
+        self.body = body
+
+    def accept(self, visitor, arg):
+        return visitor.visit_fn(self, arg)
+
+
+class App(Expression):
+    """
+    This class represents a function application, such as 'e0 e1'. The semantics
+    of an application is as follows: we evaluate the left side, e.g., e0. It
+    must result into a function fn(p, b) denoting a function that takes in a
+    parameter p and evaluates a body b. We then evaluates e1, to obtain a value
+    v. Finally, we evaluate b, but in a context where p is bound to v.
+
+    Examples:
+        >>> f = Fn('v', Add(Var('v'), Var('v')))
+        >>> e = App(f, Add(Num(40), Num(2)))
+        >>> ev = VisitorEval()
+        >>> e.accept(ev, {})
+        84
+
+        >>> f = Fn('v', Add(Var('v'), Var('w')))
+        >>> e = Let('w', Num(3), App(f, Num(2)))
+        >>> ev = VisitorEval()
+        >>> e.accept(ev, {})
+        5
+
+        >>> e = Let('f', Fn('x', Add(Var('x'), Num(1))), App(Var('f'), Num(1)))
+        >>> ev = VisitorEval()
+        >>> e.accept(ev, {})
+        2
+
+        >>> e0 = Let('w', Num(3), App(Var('f'), Num(1)))
+        >>> e1 = Let('f', Fn('v', Add(Var('v'), Var('w'))), e0)
+        >>> e2 = Let('w', Num(2), e1)
+        >>> ev = VisitorEval()
+        >>> e2.accept(ev, {})
+        3
+    """
+
+    def __init__(self, function, actual):
+        self.function = function
+        self.actual = actual
+
+    def accept(self, visitor, arg):
+        return visitor.visit_app(self, arg)
+
+
+class Function:
+    """
+    This is the class that represents functions. This class lets us distinguish
+    the three types that now exist in the language: numbers, booleans and
+    functions. Notice that the evaluation of an expression can now be a
+    function. For instance:
+
+        >>> f = Fn('v', Add(Var('v'), Var('v')))
+        >>> ev = VisitorEval()
+        >>> fval = f.accept(ev, {})
+        >>> type(fval)
+        <class 'Exp9.Function'>
+    """
+
+    def __init__(self, formal, body, env):
+        self.formal = formal
+        self.body = body
+        self.env = env
+
+    def __str__(self):
+        return f"Fn({self.formal})"
 
 
 class VisitorEval:
@@ -120,18 +227,19 @@ class VisitorEval:
     >>> print(e.accept(v, {}))
     42
     """
+
     def visit_var(self, var, env):
         if var.identifier in env:
             return env[var.identifier]
         else:
             sys.exit(f"Variavel inexistente {var.identifier}")
-    
+
     def visit_num(self, num, env):
         return num.num
 
     def visit_bln(self, exp, env):
         return exp.bln
-    
+
     def visit_add(self, add, env):
         return add.left.accept(self, env) + add.right.accept(self, env)
 
@@ -152,83 +260,21 @@ class VisitorEval:
             return exp.e0.accept(self, env)
         else:
             return exp.e1.accept(self, env)
-    
+
     def visit_let(self, let, env):
         e0_val = let.exp_def.accept(self, env)
         new_env = dict(env)
-        new_env[let.identifier]= e0_val
+        new_env[let.identifier] = e0_val
         return let.exp_body.accept(self, new_env)
 
+    def visit_fn(self, exp, env):
+        return Function(exp.formal, exp.body, env)
 
-class VisitorTypePropagator:
-    def visit_var(self, var, env):
-        if var.identifier in env:
-            return env[var.identifier]
-        else:
-            raise TypeError(f"Variavel inexistente {var.identifier}")
-    
-    def visit_num(self, num, env):
-        return int
-    
-    def visit_bln(self, exp, env):
-        return bool
-    
-    def visit_add(self, add, env):
-        left_type = add.left.accept(self, env)
-        right_type = add.right.accept(self, env)
-        if left_type == int and right_type == int:
-            return int
-        raise TypeError(f"Type error: {left_type} + {right_type}")
-    
-    def visit_lth(self, exp, env):
-        left_type = exp.left.accept(self, env)
-        right_type = exp.right.accept(self, env)
-        if left_type == int and right_type == int:
-            return bool
-        raise TypeError(f"Type error: {left_type} < {right_type}")
-    
-    def visit_and(self, add, env):
-        left_type = add.left.accept(self, env)
-        right_type = add.right.accept(self, env)
-        if left_type == bool and right_type == bool:
-            return bool
-        raise TypeError(f"Type error: {left_type} and {right_type}")
-    
-    def visit_ifThenElse(self, exp, env):
-        cond_type = exp.cond.accept(self, env)
-        e0_type = exp.e0.accept(self, env)
-        e1_type = exp.e1.accept(self, env)
-        if cond_type == bool and e0_type == e1_type:
-            return e0_type
-        else:
-            then_str = f"then branch is {e0_type}"
-            else_str = f"else branch is {e1_type}"
-            raise TypeError(f"Type error: {then_str}, {else_str}")
-    
-    def visit_let(self, let, env):
-        exp_def_type = let.exp_def.accept(self, env)
-        new_env = dict(env)
-        new_env[let.identifier] = exp_def_type
-        return let.exp_body.accept(self, new_env)
-
-def find_type(e):
-    """
-    Finds the type of an expression via type propagation.
-
-    Example:
-    >>> e0 = Let('w', Num(2), Add(Var('v'), Var('w')))
-    >>> e1 = Let('v', Num(40), e0)
-    >>> find_type(e1)
-    <class 'int'>
-
-    >>> e0 = Let('w', Bln(True), And(Var('v'), Var('w')))
-    >>> e1 = Let('v', Bln(False), e0)
-    >>> find_type(e1)
-    <class 'bool'>
-
-    >>> e = IfThenElse(Bln(True), Num(0), Num(42))
-    >>> find_type(e)
-    <class 'int'>
-    """
-    v = VisitorTypePropagator()
-    return e.accept(v, {})
+    def visit_app(self, exp, env):
+        fval = exp.function.accept(self, env)
+        if not isinstance(fval, Function):
+            sys.exit("Type error")
+        pval = exp.actual.accept(self, env)
+        new_env = dict(fval.env)
+        new_env[fval.formal] = pval
+        return fval.body.accept(self, new_env)

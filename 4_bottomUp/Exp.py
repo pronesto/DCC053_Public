@@ -12,7 +12,7 @@ class Expression(ABC):
     """
 
     @abstractmethod
-    def eval(self) -> int:
+    def eval(self):
         raise NotImplementedError
 
 
@@ -36,36 +36,17 @@ class Num(Expression):
     >>> e = Num(3)
     >>> e.eval()
     3
-
     >>> print(e)
     3
     """
 
-    def __init__(self, num: int) -> None:
+    def __init__(self, num):
         self.num = num
 
-    def eval(self) -> int:
-        """
-        Evaluate this `Number`.
-
-        Returns:
-        --------
-        : int
-            The value of the evaluated `Number`.
-        """
-
+    def eval(self):
         return self.num
 
-    def __str__(self) -> str:
-        """
-        Obtain the string representation a `Number`.
-
-        Returns:
-        --------
-        : str
-            The string representation of this `Number`'s value.
-        """
-
+    def __str__(self):
         return str(self.num)
 
 
@@ -87,34 +68,12 @@ class BinaryExpression(Expression):
         expression.
     """
 
-    def __init__(self, left: Expression, right: Expression) -> None:
-        self.left: Expression = left
-        self.right: Expression = right
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
 
     @abstractmethod
-    def eval(self) -> int:
-        """
-        Evaluate a Binary Expression.
-
-        Returns:
-        --------
-        : int
-            The resulting value of this expression.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def __str__(self) -> str:
-        """
-        Obtain the string representation from a Binary Expression.
-
-        Returns:
-        --------
-        : str
-            The string representation of this expression.
-        """
-
+    def eval(self):
         raise NotImplementedError
 
 
@@ -129,38 +88,26 @@ class Add(BinaryExpression):
         Returns the result of adding the left and right expressions.
     """
 
-    def eval(self) -> int:
+    def eval(self):
         """
-        Examples:
-        ---------
+        Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Add(n1, n2)
         >>> e.eval()
         7
-
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> n3 = Num(5)
-        >>> add1 = Add(n1, n2)
-        >>> add2 = Add(n3, add1)
-        >>> add2.eval()
-        12
         """
-
         return self.left.eval() + self.right.eval()
 
-    def __str__(self) -> str:
+    def __str__(self):
         """
         Example:
-        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Add(n1, n2)
         >>> print(e)
         +
         """
-
         return "+"
 
 
@@ -175,38 +122,26 @@ class Sub(BinaryExpression):
         Returns the result of subtracting the right expression from the left.
     """
 
-    def eval(self) -> int:
+    def eval(self):
         """
-        Examples:
-        ---------
+        Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Sub(n1, n2)
         >>> e.eval()
         -1
-
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> n3 = Num(5)
-        >>> sub1 = Sub(n1, n2)
-        >>> sub2 = Sub(n3, sub1)
-        >>> sub2.eval()
-        6
         """
-
         return self.left.eval() - self.right.eval()
 
-    def __str__(self) -> str:
+    def __str__(self):
         """
         Example:
-        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Sub(n1, n2)
         >>> print(e)
         -
         """
-
         return "-"
 
 
@@ -221,38 +156,26 @@ class Mul(BinaryExpression):
         Returns the result of multiplying the left and right expressions.
     """
 
-    def eval(self) -> int:
+    def eval(self):
         """
-        Examples:
-        ---------
+        Example:
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Mul(n1, n2)
         >>> e.eval()
         12
-
-        >>> n1 = Num(3)
-        >>> n2 = Num(4)
-        >>> n3 = Add(n1, n2)
-        >>> mul1 = Mul(n1, n2)
-        >>> mul2 = Mul(n3, mul1)
-        >>> mul2.eval()
-        84
         """
-
         return self.left.eval() * self.right.eval()
 
-    def __str__(self) -> str:
+    def __str__(self):
         """
         Example:
-        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Mul(n1, n2)
         >>> print(e)
         *
         """
-
         return "*"
 
 
@@ -268,54 +191,39 @@ class Div(BinaryExpression):
         Returns the result of dividing the left expression by the right.
     """
 
-    def eval(self) -> int:
+    def eval(self):
         """
-        Examples:
-        ---------
+        Example:
         >>> n1 = Num(28)
         >>> n2 = Num(4)
         >>> e = Div(n1, n2)
         >>> e.eval()
         7
-
         >>> n1 = Num(22)
         >>> n2 = Num(4)
         >>> e = Div(n1, n2)
         >>> e.eval()
         5
-
-        >>> zero = Num(0)
-        >>> n1 = Num(10)
-        >>> n1_prime = Sub(zero, n1)
-        >>> n2 = Num(5)
-        >>> n2_prime = Sub(zero, n2)
-        >>> e = Div(n1_prime, n2_prime)
-        >>> e.eval()
-        2
         """
-
         return self.left.eval() // self.right.eval()
 
-    def __str__(self) -> str:
+    def __str__(self):
         """
         Example:
-        --------
         >>> n1 = Num(3)
         >>> n2 = Num(4)
         >>> e = Div(n1, n2)
         >>> print(e)
         /
         """
-
         return "/"
 
 
-def evaluate(exp: Expression) -> int:
+def evaluate(exp):
     """
     Evaluate an arithmetic expression.
 
     Examples:
-    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e = Div(n1, n2)
@@ -328,16 +236,14 @@ def evaluate(exp: Expression) -> int:
     >>> evaluate(e)
     28
     """
-
     return exp.eval()
 
 
-def print_prefix(exp: Expression) -> str:
+def print_prefix(exp):
     """
-    Obtain the string representation of the expression in prefix notation.
+    Evaluate an arithmetic expression.
 
     Examples:
-    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
@@ -355,21 +261,17 @@ def print_prefix(exp: Expression) -> str:
     >>> f"{print_prefix(e2)} = {e2.eval()}"
     '* / 50 / 28 4 / 28 4 = 49'
     """
-
     s = str(exp)
-
     if isinstance(exp, BinaryExpression):
         s = f"{s} {print_prefix(exp.left)} {print_prefix(exp.right)}"
-
     return s
 
 
-def print_infix(exp) -> str:
+def print_infix(exp):
     """
-    Obtain the string representation of the expression in infix notation.
+    Evaluate an arithmetic expression.
 
     Examples:
-    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
@@ -387,21 +289,17 @@ def print_infix(exp) -> str:
     >>> print_infix(e2)
     '((50) / ((28) / (4))) * ((28) / (4))'
     """
-
     s = str(exp)
-
     if isinstance(exp, BinaryExpression):
         s = f"({print_infix(exp.left)}) {s} ({print_infix(exp.right)})"
-
     return s
 
 
-def print_postfix(exp) -> str:
+def print_postfix(exp):
     """
-    Obtain the string representation of the expression in postfix notation.
+    Evaluate an arithmetic expression.
 
     Examples:
-    ---------
     >>> n1 = Num(28)
     >>> n2 = Num(4)
     >>> e0 = Div(n1, n2)
@@ -419,10 +317,7 @@ def print_postfix(exp) -> str:
     >>> f"{print_postfix(e2)} = {e2.eval()}"
     '50 28 4 / / 28 4 / * = 49'
     """
-
     s = str(exp)
-
     if isinstance(exp, BinaryExpression):
         s = f"{print_postfix(exp.left)} {print_postfix(exp.right)} {s}"
-
     return s

@@ -2,7 +2,7 @@ from Exp import *
 from Lexer import *
 
 
-def parse_infix(lexer):
+def parse_infix(lexer) -> Expression:
     """
     Converts an arithmetic expression in Infix Notation to an expression tree.
 
@@ -13,22 +13,23 @@ def parse_infix(lexer):
                        containing the arithmetic expression in prefix notation.
 
     Returns:
-        int: The computed value of the arithmetic expression.
+        Expression: The parsed arithmetic expression.
 
     Raises:
         ValueError: If an unexpected token type is encountered.
 
     Examples:
         >>> lexer = Lexer("+ 3 * 4 2")
-        >>> e = compute_prefix(lexer)
+        >>> e = parse_infix(lexer)
         >>> e.eval()
         11
 
         >>> lexer = Lexer("+ * 3 4 2")
-        >>> e = compute_prefix(lexer)
+        >>> e = parse_infix(lexer)
         >>> e.eval()
         14
     """
+
     token = lexer.next_valid_token()
 
     if token.kind == TokenType.NUM:
@@ -37,8 +38,8 @@ def parse_infix(lexer):
 
     elif token.kind in Token.operators:
         # Recursive case: evaluate the operands
-        a = compute_prefix(lexer)
-        b = compute_prefix(lexer)
+        a = parse_infix(lexer)
+        b = parse_infix(lexer)
 
         if token.kind == TokenType.ADD:
             return Add(a, b)

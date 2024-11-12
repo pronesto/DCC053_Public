@@ -1,5 +1,4 @@
 import enum
-from Exp import *
 
 
 class TokenType(enum.Enum):
@@ -11,12 +10,11 @@ class TokenType(enum.Enum):
     NLN = 0  # New line
     WSP = 1  # White Space
     NUM = 2  # Number (integers)
-    LPR = 3  # Left parenthesis
-    RPR = 4  # Right parenthesis
     ADD = 202  # The token '+'
     SUB = 203  # The token '-'
     MUL = 204  # The token '*'
     DIV = 205  # The token '/'
+    VAR = 206  # General variables
 
 
 class Token:
@@ -29,8 +27,6 @@ class Token:
         numbers.
         kind (TokenType): The type of the token, which classifies it based on
         its role in the expression.
-
-
     """
 
     # A list of tokens that represent operators in arithmetic expressions:
@@ -43,23 +39,36 @@ class Token:
         Parameters:
             tokenText (str): The actual text of the token.
             tokenKind (TokenType): The type of the token defined in TokenType.
-
-
-        Example:
-            >>> token = Token("3", TokenType.NUM)
-            >>> token.text
-            '3'
-            >>> token.kind == TokenType.NUM
-            True
-
-            >>> token = Token("+", TokenType.ADD)
-            >>> token.text
-            '+'
-            >>> token.kind == TokenType.ADD
-            True
         """
         self.text = tokenText
         self.kind = tokenKind
+
+    @staticmethod
+    def key_word_token(text):
+        """
+        This method returns the token associated with a given keyword in the
+        language, or None otherwise.
+
+        Example:
+        >>> Token.key_word_token('add').text
+        '+'
+
+        >>> Token.key_word_token('sub').text
+        '-'
+
+        >>> Token.key_word_token('x').text
+        'x'
+        """
+        if text in tokens:
+            return tokens[text]
+        else:
+            return Token(text, TokenType.VAR)
+
+tokens = {}
+tokens["add"] = Token("+", TokenType.ADD)
+tokens["sub"] = Token("-", TokenType.SUB)
+tokens["mul"] = Token("*", TokenType.MUL)
+tokens["div"] = Token("/", TokenType.DIV)
 
 
 class Lexer:
@@ -75,13 +84,6 @@ class Lexer:
         input_string (str): The string to be tokenized.
         position (int): The current position in the input string.
         length (int): The length of the input string.
-    Example:
-        >>> lexer = Lexer("3 + 4")
-        >>> token = lexer.next_valid_token()
-        >>> token.text
-        '3'
-        >>> token.kind == TokenType.NUM
-        True
     """
 
     def __init__(self, input_string):
@@ -90,11 +92,6 @@ class Lexer:
 
         Parameters:
             input_string (str): The string to be tokenized.
-
-        Example:
-            >>> lexer = Lexer("1 + 2")
-            >>> lexer.input_string
-            '1 + 2'
         """
         self.input_string = input_string
         self.position = 0
@@ -109,14 +106,6 @@ class Lexer:
 
         Returns:
             Token: The next valid token in the input stream.
-
-        Example:
-            >>> lexer = Lexer("  2 + 3 ")
-            >>> token = lexer.next_valid_token()
-            >>> token.text
-            '2'
-            >>> lexer.next_valid_token().text
-            '+'
         """
         token = self.getToken()
         if token.kind == TokenType.WSP or token.kind == TokenType.NLN:
@@ -133,11 +122,6 @@ class Lexer:
 
         Yields:
             Token: The next valid token in the input stream.
-
-        Example:
-            >>> lexer = Lexer("(3 + 2)")
-            >>> [token.text for token in lexer.tokens()]
-            ['(', '3', '+', '2', ')']
         """
         token = self.getToken()
         while token.kind != TokenType.EOF:
@@ -155,15 +139,6 @@ class Lexer:
 
         Returns:
             Token: The next token identified in the input string.
-
-        Example:
-            >>> lexer = Lexer("3 + 4")
-            >>> lexer.getToken().text
-            '3'
-            >>> lexer.getToken().text
-            ' '
-            >>> lexer.getToken().text
-            '+'
         """
         if self.position >= self.length:
             return Token("", TokenType.EOF)
@@ -182,6 +157,16 @@ class Lexer:
                 self.position += 1
             return Token(number_text, TokenType.NUM)
 
+        elif current_char.isalpha():
+            id_text = current_char
+            while (
+                self.position < self.length
+                and self.input_string[self.position].isalnum()
+            ):
+                id_text += self.input_string[self.position]
+                self.position += 1
+            return Token.key_word_token(id_text)
+
         elif current_char == "+":
             return Token(current_char, TokenType.ADD)
 
@@ -194,12 +179,6 @@ class Lexer:
         elif current_char == "/":
             return Token(current_char, TokenType.DIV)
 
-        elif current_char == "(":
-            return Token(current_char, TokenType.LPR)
-
-        elif current_char == ")":
-            return Token(current_char, TokenType.RPR)
-
         elif current_char == " ":
             return Token(current_char, TokenType.WSP)
 
@@ -210,11 +189,95 @@ class Lexer:
             raise ValueError(f"Unexpected character: {current_char}")
 
 
+def compute_postfix(lexer):
+    """
+    Evaluates an arithmetic expression in Reverse Polish Notation (Postfix
+    Notation).
+
+    The function uses a stack to compute the value of the expression. As it
+    processes tokens from the lexer, it pushes numbers onto the stack and pops
+    them when an operator is encountered, performing the operation and pushing
+    the result back onto the stack.
+
+    Parameters:
+        lexer (Lexer): An instance of the Lexer class, initialized with a string
+                       containing the arithmetic expression in postfix notation.
+
+    Returns:
+        int: The computed value of the arithmetic expression.
+
+    Raises:
+        ValueError: If an unexpected token type is encountered or the stack is
+        improperly used.
+
+    Examples:
+        >>> lexer = Lexer("3 4 + 2 * 7 /")
+        >>> compute_postfix(lexer)
+        2
+
+        >>> lexer = Lexer("3 4 add 2 * 7 /")
+        >>> compute_postfix(lexer)
+        2
+
+        >>> lexer = Lexer("3 4 add 2 mul 7 div")
+        >>> compute_postfix(lexer)
+        2
+
+        >>> lexer = Lexer("4 3 sub")
+        >>> compute_postfix(lexer)
+        1
+
+        >>> lexer = Lexer("4 2 5 * + 1 3 2 * + /")
+        >>> compute_postfix(lexer)
+        2
+    """
+    stack = []
+
+    for token in lexer.tokens():
+        if token.kind == TokenType.NUM:
+            # Push numbers onto the stack
+            stack.append(int(token.text))
+
+        elif token.kind in Token.operators:
+            # Pop the top two numbers off the stack and apply the operator
+            if len(stack) < 2:
+                raise ValueError("Insufficient values in the expression.")
+
+            b = stack.pop()
+            a = stack.pop()
+
+            if token.kind == TokenType.ADD:
+                result = a + b
+            elif token.kind == TokenType.SUB:
+                result = a - b
+            elif token.kind == TokenType.MUL:
+                result = a * b
+            elif token.kind == TokenType.DIV:
+                if b == 0:
+                    raise ZeroDivisionError("Division by zero.")
+                result = a // b
+
+            # Push the result back onto the stack
+            stack.append(result)
+
+        else:
+            raise ValueError(f"Unexpected token type: {token.kind}")
+
+    # The final result should be the only value left in the stack
+    if len(stack) != 1:
+        raise ValueError("The user input has too many values.")
+
+    return stack[0]
+
+
 def compute_prefix(lexer):
     """
-    Converts an arithmetic expression in Polish Notation to an expression tree.
+    Evaluates an arithmetic expression in Polish Notation (Prefix Notation).
 
-    This function converts a string into an expression tree, and returns it.
+    This function uses recursion to evaluate the expression. When it encounters
+    an operator, it recursively computes the values of the operands before
+    applying the operator. The recursion effectively builds and evaluates the
+    parsing tree for the expression.
 
     Parameters:
         lexer (Lexer): An instance of the Lexer class, initialized with a string
@@ -225,23 +288,22 @@ def compute_prefix(lexer):
 
     Raises:
         ValueError: If an unexpected token type is encountered.
+        ZeroDivisionError: If a division by zero is attempted.
 
     Examples:
         >>> lexer = Lexer("+ 3 * 4 2")
-        >>> e = compute_prefix(lexer)
-        >>> e.eval()
+        >>> compute_prefix(lexer)
         11
 
         >>> lexer = Lexer("+ * 3 4 2")
-        >>> e = compute_prefix(lexer)
-        >>> e.eval()
+        >>> compute_prefix(lexer)
         14
     """
     token = lexer.next_valid_token()
 
     if token.kind == TokenType.NUM:
         # Base case: return the value if it's a number
-        return Num(int(token.text))
+        return int(token.text)
 
     elif token.kind in Token.operators:
         # Recursive case: evaluate the operands
@@ -249,13 +311,15 @@ def compute_prefix(lexer):
         b = compute_prefix(lexer)
 
         if token.kind == TokenType.ADD:
-            return Add(a, b)
+            return a + b
         elif token.kind == TokenType.SUB:
-            return Sub(a, b)
+            return a - b
         elif token.kind == TokenType.MUL:
-            return Mul(a, b)
+            return a * b
         elif token.kind == TokenType.DIV:
-            return Div(a, b)
+            if b == 0:
+                raise ZeroDivisionError("Division by zero.")
+            return a // b
 
     else:
         raise ValueError(f"Unexpected token type: {token.kind}")
