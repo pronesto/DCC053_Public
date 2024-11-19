@@ -1149,21 +1149,26 @@ def create_for_loop(begin: int, end: int, function: Function) -> Let:
 
     Examples:
     ---------
+    >>> program = create_for_loop(4, 10, Fn('x', Add(Var('x'), Num(1))))
+    >>> v = VisitorEval()
+    >>> program.accept(v, {})
+    8
+
     >>> program = create_for_loop(2, 10, Fn('x', Add(Var('x'), Num(1))))
     >>> v = VisitorEval()
     >>> program.accept(v, {})
-    11
+    7
 
     >>> double = Fn('x', Add(Var('x'), Var('x')))
     >>> program = create_for_loop(2, 10, double)
     >>> v = VisitorEval()
     >>> program.accept(v, {})
-    1024
+    16
     """
     # The body of the recursive function:
     # if n = 1 then a else loop (n - 1) f (f a)
     body = IfThenElse(
-        Lth(Var("n"), Num(2)),  # Condition: n < 2)
+        Lth(Var("n"), Var("a")),  # Condition: n < a)
         Var("a"),  # Then: a
         App(  # Else: loop (n-1) f (f a)
             App(App(Var("loop"), Add(Var("n"), Num(-1))), Var("f")),  # loop (n - 1)
