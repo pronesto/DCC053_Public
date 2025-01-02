@@ -7,8 +7,8 @@ whenever new variables are defined. Bindings are never removed from the stack.
 In this way, we can inspect the history of state transformations caused by the
 interpretation of a program.
 
-This file uses doctests all over. To test it, just run python 3 as follows:
-"python3 -m doctest main.py". The program uses syntax that is excluive of
+This file uses doctests all over. To test it, just run Python 3 as follows:
+`python3 -m doctest lang.py`. The program uses syntax that is excluive of
 Python 3. It will not work with standard Python 2.
 """
 
@@ -22,47 +22,84 @@ class Env:
     implemented as a stack, so that previous bindings of a variable V remain
     available in the environment if V is overassigned.
 
-    Example:
-        >>> e = Env()
-        >>> e.set("a", 2)
-        >>> e.set("a", 3)
-        >>> e.get("a")
-        3
+    Attributes:
+    -----------
+    initial_args : dict (optional)
+        A dictionary of `var: value` mappings to initialize the environment
+        with.
 
-        >>> e = Env({"b": 5})
-        >>> e.set("a", 2)
-        >>> e.get("a") + e.get("b")
-        7
+    Examples:
+    ---------
+    >>> e = Env()
+    >>> e.set("a", 2)
+    >>> e.set("a", 3)
+    >>> e.get("a")
+    3
+
+    >>> e = Env({"b": 5})
+    >>> e.set("a", 2)
+    >>> e.get("a") + e.get("b")
+    7
     """
 
-    def __init__(s, initial_args={}):
+    def __init__(s, initial_args=None):
         s.env = deque()
-        for var, value in initial_args.items():
-            s.env.appendleft((var, value))
+
+        if initial_args is not None:
+            for var, value in initial_args.items():
+                s.env.appendleft((var, value))
 
     def get(self, var):
         """
-        Finds the first occurrence of variable 'var' in the environment stack,
-        and returns the value associated with it.
+        Return the first occurence of variable `var` in the environment stack.
+
+        Parameters:
+        -----------
+        var : str
+            The variable to look for.
+
+        Returns:
+        --------
+        val : int
+            The value associated with `var` in the environment.
+
+        Raises:
+        -------
+        LookupError
+            Raised if `var` is not declared in this environment.
         """
+
         val = next((value for (e_var, value) in self.env if e_var == var), None)
+
         if val is not None:
             return val
+
         else:
             raise LookupError(f"Absent key {var}")
 
     def set(s, var, value):
         """
-        This method adds 'var' to the environment, by placing the binding
-        '(var, value)' onto the top of the environment stack.
+        Add `var` to the environment, and map it to `value`.
+
+        The `var: value` binding is placed on the top of the environment stack.
+
+        Parameters:
+        -----------
+        var : str
+            The variable identifier.
+        value : int
+            The variable value.
         """
+
         s.env.appendleft((var, value))
 
     def dump(s):
         """
-        Prints the contents of the environment. This method is mostly used for
-        debugging purposes.
+        Print the contents of the environment.
+
+        This method is mostly used for debugging purposes.
         """
+
         for var, value in s.env:
             print(f"{var}: {value}")
 
@@ -70,10 +107,19 @@ class Env:
 class Inst(ABC):
     """
     The representation of instructions. All that an instruction has, that is
-    common among all the instructions, is the next_inst attribute. This
+    common among all the instructions, is the `next_inst` attribute. This
     attribute determines the next instruction that will be fetched after this
     instruction runs. Also, every instruction has an index, which is always
     different. The index is incremented whenever a new instruction is created.
+
+    Attributes:
+    -----------
+    nexts : list of Inst
+        The next instructions.
+    preds : list of Inst
+        The previous instructions.
+    ID : int
+        The instruction identifier.
     """
 
     next_index = 0
@@ -85,31 +131,97 @@ class Inst(ABC):
         Inst.next_index += 1
 
     def add_next(self, next_inst):
+        """
+        Add the next instruction.
+
+        This affects both this' `nexts` and `next_inst.preds` attributes.
+
+        Parameters:
+        -----------
+        next_inst : Inst
+            The next instruction.
+        """
+
         self.nexts.append(next_inst)
         next_inst.preds.append(self)
 
     @classmethod
     @abstractmethod
     def definition(self):
+        """
+        Get the set of definitions of this instruction.
+
+        Returns:
+        --------
+        : set of Inst
+            The set of definitions of this instruction.
+        """
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
     def uses(self):
+        """
+        Get the set of uses of this instruction.
+
+        Returns:
+        --------
+        : set of Inst
+            The set of uses of this instruction.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def eval(self, env):
+        """
+        Evaluate this instruction in some environment.
+
+        Parameters:
+        -----------
+        env : dict
+            The environment to evaluate this instruction in. The environment
+            maps identifiers to values.
+
+        Returns:
+        --------
+        : int or bool
+            The result of the instruction evaluation.
+        """
+
         raise NotImplementedError
 
     def get_next(self):
+        """
+        Get the next instruction.
+
+        Returns:
+        --------
+        : Inst or None
+            The next instruction, if any. If there isn't a next instruction
+            (i.e., `self.nexts` is empty), return None.
+        """
+
         if len(self.nexts) > 0:
             return self.nexts[0]
+
         else:
             return None
 
 
 class BinOp(Inst):
     """
-    The general class of binary instructions. These instructions define a
-    value, and use two values. As such, it contains a routine to extract the
+    The general class of binary instructions. These instructions defines a
+    value, and uses two values. As such, it contains a routine to extract the
     defined value, and the list of used values.
+
+    Attributes:
+    -----------
+    dst : Inst
+        The destination.
+    src0 : Inst
+        The first used value.
+    src1 : Inst
+        The second used value.
     """
 
     def __init__(s, dst, src0, src1):
@@ -121,6 +233,15 @@ class BinOp(Inst):
     @classmethod
     @abstractmethod
     def get_opcode(self):
+        """
+        Get the operation code regarding this `BinOp`.
+
+        Returns:
+        --------
+        : str
+            The operation code.
+        """
+
         raise NotImplementedError
 
     def definition(s):
@@ -131,24 +252,29 @@ class BinOp(Inst):
 
     def __str__(self):
         op = self.get_opcode()
+
         inst_s = f"{self.ID}: {self.dst} = {self.src0}{op}{self.src1}"
         pred_s = f"\n  P: {', '.join([str(inst.ID) for inst in self.preds])}"
         next_s = f"\n  N: {self.nexts[0].ID if len(self.nexts) > 0 else ''}"
+
         return inst_s + pred_s + next_s
 
 
 class Add(BinOp):
     """
-    Example:
-        >>> a = Add("a", "b0", "b1")
-        >>> e = Env({"b0":2, "b1":3})
-        >>> a.eval(e)
-        >>> e.get("a")
-        5
+    This class represents the addition of two variables.
 
-        >>> a = Add("a", "b0", "b1")
-        >>> a.get_next() == None
-        True
+    Examples:
+    ---------
+    >>> a = Add("a", "b0", "b1")
+    >>> e = Env({"b0": 2, "b1": 3})
+    >>> a.eval(e)
+    >>> e.get("a")
+    5
+
+    >>> a = Add("a", "b0", "b1")
+    >>> a.get_next() == None
+    True
     """
 
     def eval(self, env):
@@ -160,12 +286,15 @@ class Add(BinOp):
 
 class Mul(BinOp):
     """
-    Example:
-        >>> a = Mul("a", "b0", "b1")
-        >>> e = Env({"b0":2, "b1":3})
-        >>> a.eval(e)
-        >>> e.get("a")
-        6
+    This class represents the multiplication of two variables.
+
+    Examples:
+    ---------
+    >>> a = Mul("a", "b0", "b1")
+    >>> e = Env({"b0": 2, "b1": 3})
+    >>> a.eval(e)
+    >>> e.get("a")
+    6
     """
 
     def eval(s, env):
@@ -177,12 +306,21 @@ class Mul(BinOp):
 
 class Lth(BinOp):
     """
-    Example:
-        >>> a = Lth("a", "b0", "b1")
-        >>> e = Env({"b0":2, "b1":3})
-        >>> a.eval(e)
-        >>> e.get("a")
-        True
+    This class represents the "less than" comparison of two variables.
+
+    Examples:
+    ---------
+    >>> a = Lth("a", "b0", "b1")
+    >>> e = Env({"b0": 2, "b1": 3})
+    >>> a.eval(e)
+    >>> e.get("a")
+    True
+
+    >>> a = Lth("a", "b0", "b1")
+    >>> e = Env({"b0": 23, "b1": 3})
+    >>> a.eval(e)
+    >>> e.get("a")
+    False
     """
 
     def eval(s, env):
@@ -194,12 +332,28 @@ class Lth(BinOp):
 
 class Geq(BinOp):
     """
-    Example:
-        >>> a = Geq("a", "b0", "b1")
-        >>> e = Env({"b0":2, "b1":3})
-        >>> a.eval(e)
-        >>> e.get("a")
-        False
+    This class represents the "greater than or equal to" comparison of two
+    variables.
+
+    Examples:
+    ---------
+    >>> a = Geq("a", "b0", "b1")
+    >>> e = Env({"b0": 2, "b1": 3})
+    >>> a.eval(e)
+    >>> e.get("a")
+    False
+
+    >>> a = Geq("a", "b0", "b1")
+    >>> e = Env({"b0": 2, "b1": 2})
+    >>> a.eval(e)
+    >>> e.get("a")
+    True
+
+    >>> a = Geq("a", "b0", "b1")
+    >>> e = Env({"b0": 23, "b1": 2})
+    >>> a.eval(e)
+    >>> e.get("a")
+    True
     """
 
     def eval(s, env):
@@ -212,25 +366,29 @@ class Geq(BinOp):
 class Bt(Inst):
     """
     This is a Branch-If-True instruction, which diverts the control flow to the
-    'true_dst' if the predicate 'pred' is true, and to the 'false_dst'
+    `true_dst` if the predicate `pred` is `True`, and to the `false_dst`
     otherwise.
 
-    Example:
-        >>> e = Env({"t": True, "x": 0})
-        >>> a = Add("x", "x", "x")
-        >>> m = Mul("x", "x", "x")
-        >>> b = Bt("t", a, m)
-        >>> b.eval(e)
-        >>> b.get_next() == a
-        True
+    Examples:
+    ---------
+    >>> e = Env({"t": True, "x": 0})
+    >>> a = Add("x", "x", "x")
+    >>> m = Mul("x", "x", "x")
+    >>> b = Bt("t", a, m)
+    >>> b.eval(e)
+    >>> b.get_next() == a
+    True
     """
 
     def __init__(s, cond, true_dst=None, false_dst=None):
         super().__init__()
+
         s.cond = cond
         s.nexts = [true_dst, false_dst]
+
         if true_dst != None:
             true_dst.preds.append(s)
+
         if false_dst != None:
             false_dst.preds.append(s)
 
@@ -241,20 +399,47 @@ class Bt(Inst):
         return set([s.cond])
 
     def add_true_next(s, true_dst):
+        """
+        Set the destination instruction if `cond` evaluates to `True`.
+
+        Parameters:
+        -----------
+        true_dst : Inst
+            The destination instruction.
+        """
+
         s.nexts[0] = true_dst
         true_dst.preds.append(s)
 
     def add_next(s, false_dst):
+        """
+        Set the destination instruction if `cond` evaluates to `False`.
+
+        Parameters:
+        -----------
+        true_dst : Inst
+            The destination instruction.
+        """
+
         s.nexts[1] = false_dst
         false_dst.preds.append(s)
 
     def eval(s, env):
         """
-        The evaluation of the condition sets the next_iter to the instruction.
+        Evaluate `cond` and determine the next instruction.
+
+        The evaluation of the condition sets the `next_iter` to the instruction.
         This value determines which successor instruction is to be evaluated.
-        Any values greater than 0 are evaluated as True, while 0 corresponds to
-        False.
+        Any values greater than 0 are evaluated as `True`, while 0 corresponds
+        to False.
+
+        Parameters:
+        -----------
+        env : dict
+            The environment to evaluate this instruction in. The environment
+            maps identifiers to values.
         """
+
         if env.get(s.cond):
             s.next_iter = 0
         else:
@@ -272,19 +457,32 @@ class Bt(Inst):
 
 def interp(instruction, environment):
     """
-    This function evaluates a program until there is no more instructions to
-    evaluate.
+    Evaluate a program until there are no more instructions to evaluate.
 
-    Example:
-        >>> env = Env({"m": 3, "n": 2, "zero": 0})
-        >>> m_min = Add("answer", "m", "zero")
-        >>> n_min = Add("answer", "n", "zero")
-        >>> p = Lth("p", "n", "m")
-        >>> b = Bt("p", n_min, m_min)
-        >>> p.add_next(b)
-        >>> interp(p, env).get("answer")
-        2
+    Parameters:
+    -----------
+    instruction : Inst
+        The initial instruction of the program.
+    environment : dict
+        The initial environment of the program.
+
+    Returns:
+    --------
+    environment : dict
+        The final environment after interpreting the program.
+
+    Examples:
+    ---------
+    >>> env = Env({"m": 3, "n": 2, "zero": 0})
+    >>> m_min = Add("answer", "m", "zero")
+    >>> n_min = Add("answer", "n", "zero")
+    >>> p = Lth("p", "n", "m")
+    >>> b = Bt("p", n_min, m_min)
+    >>> p.add_next(b)
+    >>> interp(p, env).get("answer")
+    2
     """
+
     if instruction:
         instruction.eval(environment)
         return interp(instruction.get_next(), environment)
