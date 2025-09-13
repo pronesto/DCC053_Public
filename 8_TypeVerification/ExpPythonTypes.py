@@ -1,6 +1,5 @@
 import sys
 from abc import ABC, abstractmethod
-from enum import Enum, auto
 
 class Expression(ABC):
     @abstractmethod
@@ -200,17 +199,7 @@ class VisitorEval:
         return let.exp_body.accept(self, new_env)
 
 class TypeError(Exception):
-    """
-    Exception raised whenever we detect a runtime type error.
-    """
     pass
-
-class Type(Enum):
-    """
-    The two types that we consider.
-    """
-    INT = auto()
-    BOOL = auto()
 
 class VisitorTypeSafeEval:
     def visit_var(self, var, env):
@@ -220,91 +209,80 @@ class VisitorTypeSafeEval:
             sys.exit(f"Variable not found {var.identifier}")
     
     def visit_num(self, num, env):
-        return (num.num, Type.INT)
+        return num.num
     
     def visit_bln(self, exp, env):
-        return (exp.bln, Type.BOOL)
+        return exp.bln
     
     def visit_add(self, add, env):
-        (v0, T0) = add.left.accept(self, env)
-        (v1, T1) = add.right.accept(self, env)
-        self.ensure_type(T0, Type.INT, "Addition")
-        self.ensure_type(T1, Type.INT, "Addition")
-        return (v0 + v1, Type.INT)
+        v0 = add.left.accept(self, env)
+        v1 = add.right.accept(self, env)
+        self.ensure_type(v0, int, "Addition")
+        self.ensure_type(v1, int, "Addition")
+        return v0 + v1
     
     def visit_sub(self, sub, env):
-        (v0, T0) = sub.left.accept(self, env)
-        (v1, T1) = sub.right.accept(self, env)
-        self.ensure_type(T0, Type.INT, "Subtraction")
-        self.ensure_type(T1, Type.INT, "Subtraction")
-        return (v0 - v1, Type.INT)
+        v0 = sub.left.accept(self, env)
+        v1 = sub.right.accept(self, env)
+        self.ensure_type(v0, int, "Subtraction")
+        self.ensure_type(v1, int, "Subtraction")
+        return v0 - v1
     
     def visit_mul(self, mul, env):
-        (v0, T0) = mul.left.accept(self, env)
-        (v1, T1) = mul.right.accept(self, env)
-        self.ensure_type(T0, Type.INT, "Multiplication")
-        self.ensure_type(T1, Type.INT, "Multiplication")
-        return (v0 * v1, Type.INT)
+        v0 = mul.left.accept(self, env)
+        v1 = mul.right.accept(self, env)
+        self.ensure_type(v0, int, "Multiplication")
+        self.ensure_type(v1, int, "Multiplication")
+        return v0 * v1
     
     def visit_div(self, div, env):
-        (v0, T0) = div.left.accept(self, env)
-        (v1, T1) = div.right.accept(self, env)
-        self.ensure_type(T0, Type.INT, "Division")
-        self.ensure_type(T1, Type.INT, "Division")
-        return (v0 // v1, Type.INT)
+        v0 = div.left.accept(self, env)
+        v1 = div.right.accept(self, env)
+        self.ensure_type(v0, int, "Division")
+        self.ensure_type(v1, int, "Division")
+        return v0 // v1
     
     def visit_and(self, exp, env):
-        (v0, T0) = exp.left.accept(self, env)
-        self.ensure_type(T0, Type.BOOL, "And")
+        v0 = exp.left.accept(self, env)
+        self.ensure_type(v0, bool, "And")
         if v0:
-            (v1, T1) = exp.right.accept(self, env)
-            self.ensure_type(T1, Type.BOOL, "And")
-            return (v1, Type.BOOL)
-        return (False, Type.BOOL)
+            v1 = exp.right.accept(self, env)
+            self.ensure_type(v1, bool, "And")
+            return v1
+        return False
     
     def visit_lth(self, exp, env):
-        (v0, T0) = exp.left.accept(self, env)
-        (v1, T1) = exp.right.accept(self, env)
-        self.ensure_type(T0, Type.INT, "Less Than")
-        self.ensure_type(T1, Type.INT, "Less Than")
-        return (v0 < v1, Type.INT)
+        v0 = exp.left.accept(self, env)
+        v1 = exp.right.accept(self, env)
+        self.ensure_type(v0, int, "Less Than")
+        self.ensure_type(v1, int, "Less Than")
+        return v0 < v1
     
     def visit_ifThenElse(self, exp, env):
-        (cond, TC) = exp.cond.accept(self, env)
-        self.ensure_type(TC, Type.BOOL, "If-Then-Else Condition")
+        cond = exp.cond.accept(self, env)
+        self.ensure_type(cond, bool, "If-Then-Else Condition")
         if cond:
             return exp.e0.accept(self, env)
         else:
             return exp.e1.accept(self, env)
     
     def visit_let(self, let, env):
-        (v0, T0) = let.exp_def.accept(self, env)
+        v0 = let.exp_def.accept(self, env)
         new_env = dict(env)
-        new_env[let.identifier] = (v0, T0)
+        new_env[let.identifier] = v0
         return let.exp_body.accept(self, new_env)
 
-    def ensure_type(self, runtime_type, expected_type, operation_name):
+    def ensure_type(self, value, expected_type, operation_name):
         #if not isinstance(value, expected_type):
-        if not runtime_type == expected_type:
+        if not type(value) == expected_type:
             op_str = f"Type error in {operation_name}"
-            ex_str = f"expected {expected_type.name}"
-            gt_str = f"got {runtime_type.name}"
+            ex_str = f"expected {expected_type.__name__}"
+            gt_str = f"got {type(value).__name__}"
             raise TypeError(f"{op_str}: {ex_str}, {gt_str}")
 
 def type_safe_eval(e):
-    """
-    Example 0:
-    >>> e = Let('x', Add(Num(2), Num(3)), Add(Var('x'), Num(4)))
-    >>> type_safe_eval(e)
-    9
-
-    Example 1:
-    >>> e = Let('x', Add(Bln(True), Num(3)), Add(Var('x'), Num(4)))
-    >>> type_safe_eval(e)
-    Type error in Addition: expected INT, got BOOL
-    """
     v = VisitorTypeSafeEval()
     try:
-        return e.accept(v, {})[0]
+        return e.accept(v, {})
     except TypeError as tp_error:
         print(tp_error)
