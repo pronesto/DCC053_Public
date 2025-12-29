@@ -1038,17 +1038,12 @@ def create_arithmetic_sum(init_value: int, end_value: int) -> Let:
     28
     """
     # The inner body of the function:
-    # if n0 < n1 then n0 + range (n0 + 1) n1 else 0
-    body = IfThenElse(
-        Lth(Var("n0"), Var("n1")),  # Condition: n0 < n1
-        Add(
-            Var("n0"),
-            App(  # Then: n0 + range (n0 + 1) n1
-                App(Var("range"), Add(Var("n0"), Num(1))), Var("n1")  # range (n0 + 1)
-            ),
-        ),
-        Num(0),  # Else: 0
-    )
+    cond_lth = Lth(Var("n0"), Var("n1"))
+    add_n1 = Add(Var("n0"), Num(1))
+    app_range_add = App(Var("range"), add_n1)  # range (n0 + 1)
+    app_range_n1 = App(app_range_add, Var("n1"))
+    add_n1_range = Add(Var("n0"), app_range_n1)
+    body = IfThenElse(cond_lth, add_n1_range, Num(0))
 
     # Anonymous function: fn n1 => ...
     fn_n1 = Fn("n1", body)
@@ -1057,9 +1052,8 @@ def create_arithmetic_sum(init_value: int, end_value: int) -> Let:
     fun_range = Fun("range", "n0", fn_n1)
 
     # Application: range init_value end_value
-    app_range = App(
-        App(Var("range"), Num(init_value)), Num(end_value)  # range 2  # range 2 7
-    )
+    app_range_init = App(Var("range"), Num(init_value))
+    app_range = App(app_range_init, Num(end_value))
 
     # Whole program:
     return Let("range", fun_range, app_range)
@@ -1096,15 +1090,13 @@ def create_loop(num_iterations: int) -> Let:
     11
     """
     # The body of the recursive function:
-    # if n = 1 then a else loop (n - 1) f (f a)
-    body = IfThenElse(
-        cond=Lth(Var("n"), Num(2)),  # Condition: n < 2)
-        e0=Var("a"),  # Then: a
-        e1=App(  # Else: loop (n-1) f (f a)
-            App(App(Var("loop"), Add(Var("n"), Num(-1))), Var("f")),  # loop (n - 1)
-            App(Var("f"), Var("a")),  # f a
-        ),
-    )
+    add_var_minus = Add(Var("n"), Num(-1))
+    app_loop_var_minus = App(Var("loop"), add_var_minus)
+    app_f_a = App(Var("f"), Var("a"))
+    app_loop_f = App(app_loop_var_minus, Var("f"))
+    app_loop_f_a = App(app_loop_f, app_f_a)
+    cond_n_2 = Lth(Var("n"), Num(2))
+    body = IfThenElse(cond_n_2, Var("a"), app_loop_f_a)
 
     # Anonymous function fn a => ...
     fn_a = Fn("a", body)
@@ -1116,13 +1108,10 @@ def create_loop(num_iterations: int) -> Let:
     fun_loop = Fun("loop", "n", fn_f)
 
     # Application: loop num_iterations (fn x => x + 1) 2
-    app_loop = App(
-        App(
-            App(Var("loop"), Num(num_iterations)),  # loop num_iterations
-            Fn("x", Add(Var("x"), Num(1))),  # (fn x => x + 1)
-        ),
-        Num(2),  # 2
-    )
+    app_loop_num_iter = App(Var("loop"), Num(num_iterations))
+    add_x_1 = Add(Var("x"), Num(1))
+    iterate_over_x = App(app_loop_num_iter, Fn("x", add_x_1))
+    app_loop = App(iterate_over_x, Num(2))
 
     # Whole program:
     return Let("loop", fun_loop, app_loop)
@@ -1167,14 +1156,13 @@ def create_for_loop(begin: int, end: int, function: Function) -> Let:
     """
     # The body of the recursive function:
     # if n = 1 then a else loop (n - 1) f (f a)
-    body = IfThenElse(
-        Lth(Var("n"), Var("a")),  # Condition: n < a)
-        Var("a"),  # Then: a
-        App(  # Else: loop (n-1) f (f a)
-            App(App(Var("loop"), Add(Var("n"), Num(-1))), Var("f")),  # loop (n - 1)
-            App(Var("f"), Var("a")),  # f a
-        ),
-    )
+    n_lth_a = Lth(Var("n"), Var("a"))
+    add_n_minus_1 = Add(Var("n"), Num(-1))
+    app_loop_n_minus_1 = App(Var("loop"), add_n_minus_1)
+    app_f_n_times = App(app_loop_n_minus_1, Var("f"))
+    app_f_a = App(Var("f"), Var("a"))
+    loop_over_app = App(app_f_n_times, app_f_a)
+    body = IfThenElse(n_lth_a, Var("a"), loop_over_app)
 
     # Anonymous function fn a => ...
     fn_a = Fn("a", body)
@@ -1186,7 +1174,18 @@ def create_for_loop(begin: int, end: int, function: Function) -> Let:
     fun_loop = Fun("loop", "n", fn_f)
 
     # Application: loop num_iterations (fn x => x + 1) 2
-    app_loop = App(App(App(Var("loop"), Num(end)), function), Num(begin))
+    loop_till_end = App(Var("loop"), Num(end))
+    loop_over_function = App(loop_till_end, function)
+    app_loop = App(loop_over_function, Num(begin))
 
     # Whole program:
     return Let("loop", fun_loop, app_loop)
+
+add_y_x = Add(Var("y"), Var("x"))
+f_y_is_add = Fn("y", add_y_x)
+fun_f_x_is_add = Fun("f", "x", f_y_is_add)
+def_g = Let("g", fun_f_x_is_add, Var("g"))
+app_g_on_3 = App(def_g, Num(3))
+p = App(app_g_on_3, Num(4))
+v = VisitorEval()
+print(p.accept(v, {}))

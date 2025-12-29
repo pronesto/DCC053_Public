@@ -1,6 +1,6 @@
 """
-This is the implementation of the language with functions using dynamic
-scoping rules. It does not support closures.
+This is an implementation of the language with recursive functions using static
+scoping rules. It supports closures, but not recursion.
 """
 
 import sys
@@ -183,7 +183,7 @@ class App(Expression):
         >>> e2 = Let('w', Num(2), e1)
         >>> ev = VisitorEval()
         >>> e2.accept(ev, {})
-        4
+        3
     """
 
     def __init__(self, function, actual):
@@ -202,14 +202,15 @@ class Function:
     function. For instance:
 
     Example:
-        >>> f = Function('v', Add(Var('v'), Var('v')))
+        >>> f = Function('v', Add(Var('v'), Var('v')), {})
         >>> print(str(f))
         Fn(v)
     """
 
-    def __init__(self, formal, body):
+    def __init__(self, formal, body, env):
         self.formal = formal
         self.body = body
+        self.env = env
 
     def __str__(self):
         return f"Fn({self.formal})"
@@ -271,75 +272,21 @@ class VisitorEval:
         return let.exp_body.accept(self, new_env)
 
     def visit_fn(self, exp, env):
-        return Function(exp.formal, exp.body)
+        return Function(exp.formal, exp.body, env)
 
     def visit_app(self, exp, env):
         fval = exp.function.accept(self, env)
         if not isinstance(fval, Function):
             sys.exit("Type error")
         pval = exp.actual.accept(self, env)
-        new_env = dict(env)
+        new_env = dict(fval.env)
         new_env[fval.formal] = pval
         return fval.body.accept(self, new_env)
 
-def create_loop(init_value, end_value):
-    """
-    The goal of this example is to demonstrate that some form of recursion is
-    possible in the language with dynamic scope.
-
-    To this end, we create the following function:
-
-    let
-      loop = fn x =>
-        if x < end_value
-        then loop (x + 1)
-        else x
-      in
-        loop init_value
-      end
-
-    Example:
-        >>> program = create_loop(2, 7)
-        >>> v = VisitorEval()
-        >>> program.accept(v, {})
-        7
-    """
-    lth_exp = Lth(Var('x'), Num(end_value))
-    rec_app = App(Var('loop'), Add(Var('x'), Num(1)))
-    body = IfThenElse(lth_exp, rec_app, Var('x'))
-    fn_loop = Fn('x', body)
-    return Let('loop', fn_loop, App(Var('loop'), Num(init_value)))
-
-def create_closure(v0, v1):
-    """
-    The goal of this test is to demonstrate that our language with dynamic
-    scope cannot handle closures. We shall use the following code:
-
-    let
-      f = fn x => fn y => x + y
-    in
-      f v0 v1
-    end
-
-    In this case, the variable 'x' will not be defined upon evaluating the
-    expression 'x + y'. This happens because the application (f v0) returns a
-    function Fn('y', x + y), but it does not return the environment where the
-    application happen; hence, the value of 'x' is discarded.
-
-    Example:
-        >>> program = create_closure(2, 7)
-        >>> v = VisitorEval()
-        >>> program.accept(v, {})
-        9
-    """
-    func_dec = Fn('x', Fn('y', Add(Var('x'), Var('y'))))
-    let_body = App(App(Var('f'), Num(v0)), Num(v1))
-    return Let('f', func_dec, let_body)
-
 def create_arithmetic_sum(init_value, end_value):
     """
-    The goal of this example is to demonstrate that the language with
-    dynamic scope does not support recursive closures.
+    The goal of this example is to demonstrate that recursion cannot be
+    implemented in the language with anonymous functions with static scope.
 
     To this end, we create the following function:
 
@@ -356,9 +303,7 @@ def create_arithmetic_sum(init_value, end_value):
         >>> program = create_arithmetic_sum(2, 7)
         >>> v = VisitorEval()
         >>> program.accept(v, {})
-        Traceback (most recent call last):
-        ...
-        SystemExit: Variavel inexistente n0
+        20
     """
     # Inner recursive function call range (n0 + 1) n1
     recursive_call = App(App(Var('range'), Add(Var('n0'), Num(1))), Var('n1'))
