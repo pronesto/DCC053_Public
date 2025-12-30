@@ -283,6 +283,98 @@ class VisitorEval:
         new_env[fval.formal] = pval
         return fval.body.accept(self, new_env)
 
+def create_closure(v0, v1):
+    """
+    The goal of this test is to demonstrate that our language with
+    dynamic scope cannot handle closures. We shall use the following
+    code:
+
+    let
+      f = fn x => fn y => x + y
+    in
+      f v0 v1
+    end
+
+    In this case, the variable 'x' will not be defined upon evaluating
+    the expression 'x + y'. This happens because the application (f v0)
+    returns a function Fn('y', x + y), but it does not return the
+    environment where the application happen; hence, the value of 'x'
+    is discarded.
+
+    Example:
+        >>> program = create_closure(2, 7)
+        >>> v = VisitorEval()
+        >>> program.accept(v, {})
+        9
+    """
+    func_dec = Fn('x', Fn('y', Add(Var('x'), Var('y'))))
+    let_body = App(App(Var('f'), Num(v0)), Num(v1))
+    return Let('f', func_dec, let_body)
+
+
+def create_sum():
+    """
+    The goal of this example is to demonstrate that simple recursion is not
+    possible in the language with static scope.
+
+    To this end, we create the following function:
+
+    let
+      sum = fn x =>
+        if x < 1
+        then 0
+        else x + sum (x - 1)
+      in
+        sum
+      end
+
+    Example:
+        >>> sum_func = create_sum()
+        >>> program = App(sum_func, Num(5))
+        >>> v = VisitorEval()
+        >>> program.accept(v, {})
+        Traceback (most recent call last):
+        ...
+        SystemExit: Variavel inexistente sum
+    """
+    lth_exp = Lth(Var('x'), Num(1))
+    rec_app = App(Var('sum'), Add(Var('x'), Num(-1)))
+    else_body = Add(Var('x'), rec_app)
+    body = IfThenElse(lth_exp, Num(0), else_body)
+    fun_sum = Fn('x', body)
+    return Let('sum', fun_sum, Var('sum'))
+
+def create_loop(value):
+    """
+    The goal of this example is to demonstrate that some form of recursion is
+    possible in the language with dynamic scope.
+
+    To this end, we create the following function:
+
+    let
+      loop = fn x =>
+        if 0 < x
+        then x + loop (x - 1)
+        else 0
+      in
+        loop value
+      end
+
+    Example:
+        >>> program = create_loop(5)
+        >>> v = VisitorEval()
+        >>> program.accept(v, {})
+        Traceback (most recent call last):
+        ...
+        SystemExit: Variavel inexistente loop
+    """
+    lth_exp = Lth(Num(0), Var('x'))
+    rec_app = Add(Var('x'), App(Var('loop'), Add(Var('x'), Num(-1))))
+    body = IfThenElse(lth_exp, rec_app, Num(0))
+    fn_loop = Fn('x', body)
+    return Let('loop', fn_loop, App(Var('loop'), Num(value)))
+
+
 def create_arithmetic_sum(init_value, end_value):
     """
     The goal of this example is to demonstrate that recursion cannot be
@@ -303,7 +395,9 @@ def create_arithmetic_sum(init_value, end_value):
         >>> program = create_arithmetic_sum(2, 7)
         >>> v = VisitorEval()
         >>> program.accept(v, {})
-        20
+        Traceback (most recent call last):
+        ...
+        SystemExit: Variavel inexistente range
     """
     # Inner recursive function call range (n0 + 1) n1
     recursive_call = App(App(Var('range'), Add(Var('n0'), Num(1))), Var('n1'))
@@ -328,4 +422,47 @@ def create_arithmetic_sum(init_value, end_value):
         App(App(Var('range'), Num(init_value)), Num(end_value))
     )
 
+    return program
+
+def Z():
+    """
+    Z = fn f =>
+          (fn x => f (fn v => x x v))
+          (fn x => f (fn v => x x v))
+    """
+    xx = App(Var('x'), Var('x'))          # x x
+    rec_fun = Fn('v', App(xx, Var('v')))  # fn v => x x v
+    f_app = App(Var('f'), rec_fun)        # f (fn v => x x v)
+    fx = Fn('x', f_app)                   # fn x => f (fn v => x x v)
+    body = App(fx, fx)                    # (fn x => ...) (fn x => ...)
+    return Fn('f', body)                  # fn f => ...
+
+def loop_maker():
+    """
+    fn self =>
+      fn x =>
+        if 0 < x
+        then x + self (x - 1)
+        else 0
+    """
+    lth = Lth(Num(0), Var('x'))           # 0 < x 
+    minus_x = Add(Var('x'), Num(-1))      # x - 1
+    rec_call = App(Var('self'), minus_x)  # self (x-1)
+    add_x = Add(Var('x'), rec_call)       # x + self (x-1)
+    body = IfThenElse(lth, add_x, Num(0)) # if 0 < x then x + self(x-1) else 0
+    inner = Fn('x', body)                 # fn x => ...
+    return Fn('self', inner)              # fn self => ...
+
+def create_recursive_loop_with_Z(value):
+    """
+    This is an example of the Z combinator in action. It simulates the
+    application: (Z (loop_maker)) (value)
+
+        >>> program = create_recursive_loop_with_Z(5)
+        >>> v = VisitorEval()
+        >>> program.accept(v, {})
+        15
+    """
+    loop = App(Z(), loop_maker())         # Z loop_maker
+    program = App(loop, Num(value))       # loop value
     return program

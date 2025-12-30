@@ -282,7 +282,7 @@ class VisitorEval:
         new_env[fval.formal] = pval
         return fval.body.accept(self, new_env)
 
-def create_loop(init_value, end_value):
+def create_loop(value):
     """
     The goal of this example is to demonstrate that some form of recursion is
     possible in the language with dynamic scope.
@@ -291,24 +291,24 @@ def create_loop(init_value, end_value):
 
     let
       loop = fn x =>
-        if x < end_value
-        then loop (x + 1)
-        else x
+        if 0 < x
+        then x + loop (x - 1)
+        else 0
       in
-        loop init_value
+        loop value
       end
 
     Example:
-        >>> program = create_loop(2, 7)
+        >>> program = create_loop(5)
         >>> v = VisitorEval()
         >>> program.accept(v, {})
-        7
+        15
     """
-    lth_exp = Lth(Var('x'), Num(end_value))
-    rec_app = App(Var('loop'), Add(Var('x'), Num(1)))
-    body = IfThenElse(lth_exp, rec_app, Var('x'))
+    lth_exp = Lth(Num(0), Var('x'))
+    rec_app = Add(Var('x'), App(Var('loop'), Add(Var('x'), Num(-1))))
+    body = IfThenElse(lth_exp, rec_app, Num(0))
     fn_loop = Fn('x', body)
-    return Let('loop', fn_loop, App(Var('loop'), Num(init_value)))
+    return Let('loop', fn_loop, App(Var('loop'), Num(value)))
 
 def create_closure(v0, v1):
     """
@@ -330,11 +330,14 @@ def create_closure(v0, v1):
         >>> program = create_closure(2, 7)
         >>> v = VisitorEval()
         >>> program.accept(v, {})
-        9
+        Traceback (most recent call last):
+        ...
+        SystemExit: Variavel inexistente x
     """
     func_dec = Fn('x', Fn('y', Add(Var('x'), Var('y'))))
     let_body = App(App(Var('f'), Num(v0)), Num(v1))
     return Let('f', func_dec, let_body)
+
 
 def create_arithmetic_sum(init_value, end_value):
     """
